@@ -1,0 +1,29 @@
+# Exemple commenté de manifeste Kubernetes ServiceMonitor (Prometheus Operator)
+# Ce manifeste permet la découverte dynamique et la collecte des métriques d'un service
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: orion-gateway-monitor
+  namespace: orion
+  labels:
+    release: prometheus-stack # Label sélectionné par l'instance Prometheus Operator
+    app.kubernetes.io/part-of: orion
+spec:
+  # Sélection des pods cibles via les labels de leur Service Kubernetes
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: orion-gateway
+  # Découverte des namespaces (ici limité au namespace orion)
+  namespaceSelector:
+    matchNames:
+      - orion
+  # Configuration des cibles de collecte (endpoints)
+  endpoints:
+    - port: http-metrics       # Nom du port défini dans le Service Kubernetes
+      path: /metrics           # Chemin d'exposition des métriques Prometheus
+      interval: 10s            # Intervalle de scraping
+      scrapeTimeout: 8s        # Délai maximal d'attente
+      metricRelabelings:
+        # Exemple de relabeling : suppression des labels à haute cardinalité avant stockage
+        - action: labeldrop
+          regex: "(pod_ip|instance)"

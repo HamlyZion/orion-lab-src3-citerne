@@ -1,0 +1,112 @@
+# Questions de référence du SLO de qualité (36 questions, 12 par équipe : support, rh, dev).
+# Champs : id, team, question.
+
+questions:
+  - id: REF-001
+    team: support
+    question: "Quel port UDP et quelle adresse de passerelle sont utilisés par le concentrateur VPN WireGuard de Lyon ?"
+  - id: REF-002
+    team: support
+    question: "Quelle vérification est obligatoire avant de réinitialiser les jetons TOTP d'un collaborateur dans Sésame ?"
+  - id: REF-003
+    team: support
+    question: "Quel est le délai de prise en charge d'une alerte critique par l'ingénieur d'astreinte N2 et quel poste téléphonique permet l'escalade ?"
+  - id: REF-004
+    team: support
+    question: "Quelle est la durée de validité des certificats TLS internes délivrés par l'autorité Coffre chez Nordel ?"
+  - id: REF-005
+    team: support
+    question: "Quelles sont les adresses IP des deux résolveurs DNS Unbound internes des salles serveurs de Lyon et de Lille ?"
+  - id: REF-006
+    team: support
+    question: "Dans quel répertoire temporaire faut-il restaurer les fichiers depuis un dépôt Restic avant vérification ?"
+  - id: REF-007
+    team: support
+    question: "Sur quel port TCP les serveurs d'impression de Boréal envoient-ils les flux ZPL aux imprimantes thermiques d'entrepôt ?"
+  - id: REF-008
+    team: support
+    question: "Quel identifiant de VLAN est attribué aux postes bureautiques des collaborateurs sur les commutateurs d'accès ?"
+  - id: REF-009
+    team: support
+    question: "Où sont conservées les clés de récupération LUKS et BitLocker des postes de travail gérés par la DSI ?"
+  - id: REF-010
+    team: support
+    question: "Après combien d'échecs consécutifs de la sonde ICMP le routeur de site bascule-t-il sur le lien 4G de secours ?"
+  - id: REF-011
+    team: support
+    question: "Quelle est la durée maximale d'activation d'un compte Sésame attribué à un prestataire externe ?"
+  - id: REF-012
+    team: support
+    question: "À quelle fréquence la DSI de Nordel réalise-t-elle un exercice complet de restauration des sauvegardes critiques ?"
+  - id: REF-013
+    team: rh
+    question: "Dans quel délai avant l'arrivée d'un salarié le service RH doit-il ouvrir le ticket de création de compte dans Balise ?"
+  - id: REF-014
+    team: rh
+    question: "À quelle heure les accès Sésame et VPN d'un collaborateur sortant sont-ils désactivés le jour de son départ ?"
+  - id: REF-015
+    team: rh
+    question: "Combien de jours de RTT annuels sont crédités pour un ingénieur au forfait jours chez Nordel ?"
+  - id: REF-016
+    team: rh
+    question: "Quel est le montant de l'indemnité forfaitaire pour une semaine complète d'astreinte technique chez Nordel ?"
+  - id: REF-017
+    team: rh
+    question: "Quel est le nombre maximal de jours de télétravail hebdomadaire autorisé par l'avenant standard chez Nordel ?"
+  - id: REF-018
+    team: rh
+    question: "Quel est le plafond de remboursement d'un repas du soir lors d'un déplacement professionnel hors de Lyon et Lille ?"
+  - id: REF-019
+    team: rh
+    question: "Sous quel délai un salarié doit-il transmettre son avis d'arrêt de travail au service RH de Nordel ?"
+  - id: REF-020
+    team: rh
+    question: "À quelle adresse interne faut-il envoyer une demande de prise en charge d'une certification technique ?"
+  - id: REF-021
+    team: rh
+    question: "Qui valide le calendrier des semaines en école d'un alternant lors de son intégration chez Nordel ?"
+  - id: REF-022
+    team: rh
+    question: "Quelle est l'adresse électronique de la référente RH chargée de la cellule d'écoute et de signalement chez Nordel ?"
+  - id: REF-023
+    team: rh
+    question: "Après quelle durée d'utilisation un ordinateur portable professionnel fait-il l'objet d'un renouvellement chez Nordel ?"
+  - id: REF-024
+    team: rh
+    question: "À quelle date limite du mois les heures d'intervention d'astreinte doivent-elles être saisies dans Hélia pour passer sur la paie du mois en cours ?"
+  - id: REF-025
+    team: dev
+    question: "Dans quel en-tête HTTP et sous quel format une équipe transmet-elle sa clé d'accès lors d'un appel à Orion ?"
+  - id: REF-026
+    team: dev
+    question: "Quel code HTTP renvoie la passerelle d'Orion lorsqu'une équipe a consommé l'intégralité de son quota de tokens ?"
+  - id: REF-027
+    team: dev
+    question: "Combien d'approbations de revue de code sont requises dans Forge avant de fusionner une branche vers main ?"
+  - id: REF-028
+    team: dev
+    question: "Dans quel dépôt Git Argo CD lit-il les manifestes de déploiement des applications de Nordel ?"
+  - id: REF-029
+    team: dev
+    question: "Quelle règle s'applique à la suppression d'une colonne PostgreSQL dans une migration Alembic de Boréal ?"
+  - id: REF-030
+    team: dev
+    question: "Dans quel mode de mutualisation PgBouncer est-il configuré devant la base PostgreSQL de l'ERP Boréal ?"
+  - id: REF-031
+    team: dev
+    question: "Sous quel préfixe de chemin les secrets propres à l'application Boréal sont-ils stockés dans Coffre ?"
+  - id: REF-032
+    team: dev
+    question: "Quelles sont les deux architectures matérielles obligatoires lors de la publication d'une image conteneur sur le registre interne de Nordel ?"
+  - id: REF-033
+    team: dev
+    question: "Quel en-tête HTTP standard transporte l'identifiant de trace W3C entre les microservices de Nordel ?"
+  - id: REF-034
+    team: dev
+    question: "Quel critère de temps de réponse au 95e percentile doit être respecté lors d'un tir k6 de validation sur l'API de Boréal ?"
+  - id: REF-035
+    team: dev
+    question: "Quelle commande permet d'annuler immédiatement une livraison défectueuse de Boréal dans Argo CD ?"
+  - id: REF-036
+    team: dev
+    question: "Dans quelle file morte (dead-letter queue) RabbitMQ dépose-t-il les bons d'expédition de Boréal après trois échecs de traitement ?"

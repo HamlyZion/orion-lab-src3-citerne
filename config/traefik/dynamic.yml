@@ -1,0 +1,32 @@
+tls:
+  certificates:
+    - certFile: "/etc/traefik/certs/server.crt"
+      keyFile: "/etc/traefik/certs/server.key"
+  stores:
+    default:
+      defaultCertificate:
+        certFile: "/etc/traefik/certs/server.crt"
+        keyFile: "/etc/traefik/certs/server.key"
+
+http:
+  routers:
+    orion-rag:
+      entryPoints:
+        - "websecure"
+      rule: "Path(`/ask`) || Path(`/healthz`) || PathPrefix(`/`)"
+      service: "rag"
+      tls: {}
+
+  services:
+    rag:
+      loadBalancer:
+        serversTransport: "rag-transport"
+        servers:
+          - url: "http://rag:8000"
+
+  serversTransports:
+    rag-transport:
+      forwardingTimeouts:
+        dialTimeout: "5s"
+        responseHeaderTimeout: "40s"
+        idleConnTimeout: "90s"

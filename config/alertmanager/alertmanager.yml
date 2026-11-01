@@ -1,0 +1,21 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: "orion-default"
+  group_by: ["alertname", "service", "slo"]
+  group_wait: 10s
+  group_interval: 30s
+  repeat_interval: 1h
+  routes:
+    - matchers:
+        - severity="page"
+      receiver: "orion-page"
+    - matchers:
+        - severity="ticket"
+      receiver: "orion-ticket"
+
+receivers:
+  - name: "orion-default"
+  - name: "orion-page"
+  - name: "orion-ticket"

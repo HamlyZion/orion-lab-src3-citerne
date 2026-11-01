@@ -1,0 +1,18 @@
+services:
+  prom-seed:
+    image: ${ORION_TOOLS_IMAGE:-ghcr.io/jassouline/orion-tools:sha-aafd849}
+    user: "65534:65534"
+    restart: "no"
+    command: ["prom-seed", "--output-dir=/prometheus"]
+    volumes:
+      - orion-promdata:/prometheus
+    networks:
+      - obs
+
+  prometheus:
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=24h"
+      - "--enable-feature=exemplar-storage"
+      - "--web.enable-lifecycle"

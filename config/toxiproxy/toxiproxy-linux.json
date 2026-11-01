@@ -1,0 +1,44 @@
+[
+  {
+    "name": "pg-rag",
+    "listen": "0.0.0.0:5432",
+    "upstream": "postgres-db:5432",
+    "enabled": true
+  },
+  {
+    "name": "pg-gateway",
+    "listen": "0.0.0.0:5433",
+    "upstream": "postgres-db:5432",
+    "enabled": true
+  },
+  {
+    "name": "pg-worker",
+    "listen": "0.0.0.0:5434",
+    "upstream": "postgres-db:5432",
+    "enabled": true
+  },
+  {
+    "name": "gw-rag",
+    "listen": "0.0.0.0:8000",
+    "upstream": "gateway:8000",
+    "enabled": true
+  },
+  {
+    "name": "gw-worker",
+    "listen": "0.0.0.0:8001",
+    "upstream": "gateway:8000",
+    "enabled": true
+  },
+  {
+    "name": "ollama",
+    "listen": "0.0.0.0:11434",
+    "upstream": "ollama-svc:11434",
+    "enabled": true
+  },
+  {
+    "name": "llmsim",
+    "listen": "0.0.0.0:11435",
+    "upstream": "llm-sim:11434",
+    "enabled": true
+  }
+]

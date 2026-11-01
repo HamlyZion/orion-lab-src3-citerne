@@ -1,0 +1,18 @@
+# Règles d'enregistrement (Recording Rules) — Exemple pour la plateforme Orion
+groups:
+  - name: orion_availability_slo
+    interval: 10s
+    rules:
+      # Ratio d'erreurs 5xx sur fenêtre courte (40s) mesuré à l'entrée Traefik
+      - record: job:traefik_requests_errors:ratio_rate40s
+        expr: >-
+          sum(rate(traefik_service_requests_total{service="rag@file", code=~"5.."}[40s]))
+          /
+          clamp_min(sum(rate(traefik_service_requests_total{service="rag@file"}[40s])), 1e-9)
+
+      # Ratio d'erreurs 5xx sur fenêtre longue (8m) mesuré à l'entrée Traefik
+      - record: job:traefik_requests_errors:ratio_rate8m
+        expr: >-
+          sum(rate(traefik_service_requests_total{service="rag@file", code=~"5.."}[8m]))
+          /
+          clamp_min(sum(rate(traefik_service_requests_total{service="rag@file"}[8m])), 1e-9)

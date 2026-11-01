@@ -1,0 +1,117 @@
+groups:
+  - name: orion_slo_recording
+    interval: 10s
+    rules:
+      - record: job:traefik_requests:rate5m
+        expr: sum(rate(traefik_service_requests_total{service="rag@file", code!="429"}[5m]))
+
+      # TODO(lab-1b): calculer le ratio d'erreurs 5xx (hors 429) du service rag@file sur une fenêtre de 8m
+      - record: job:traefik_errors:ratio_rate8m
+        expr: vector(0)
+
+      # TODO(lab-1b): calculer le ratio d'erreurs 5xx (hors 429) du service rag@file sur une fenêtre de 40s
+      - record: job:traefik_errors:ratio_rate40s
+        expr: vector(0)
+
+      - record: job:orion_gateway_latency_p95:5m
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(gateway_request_duration_seconds_bucket[5m]))
+          )
+
+      - record: backend:orion_gateway_latency_p95:5m
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le, backend) (rate(gateway_request_duration_seconds_bucket[5m]))
+          )
+
+      - record: job:orion_quality_good_ratio:rate15m
+        expr: |
+          sum(rate(quality_reference_checks_total{result="good"}[15m]))
+          /
+          clamp_min(sum(rate(quality_reference_checks_total[15m])), 1e-9)
+
+  - name: orion_slo_alerts
+    interval: 10s
+    rules:
+      # TODO(lab-1b): écrire l'alerte de burn rate multi-fenêtres (8m et 40s, facteur 14.4 sur budget 0.005,
+      # garde de volume >= 10 requêtes hors 429 sur 40s, keep_firing_for: 2m, sans clause for:)
+      - alert: OrionSLODisponibiliteBurnRatePage
+        expr: vector(0) > 1
+        labels:
+          severity: page
+          slo: availability
+          service: orion-rag
+        annotations:
+          summary: "Consommation rapide du budget d'erreur de disponibilité d'Orion (burn rate > 14,4x)"
+          description: "Le taux d'erreur 5xx hors 429 dépasse le seuil de burn rate rapide sur 8 min et 40 s."
+
+      - alert: OrionSLOLatencePage
+        expr: |
+          (
+            histogram_quantile(0.95, sum by (le, backend) (rate(gateway_request_duration_seconds_bucket{backend="ollama"}[5m]))) > 12
+            and
+            sum by (backend) (increase(gateway_request_duration_seconds_count{backend="ollama"}[5m])) >= 5
+          )
+          or
+          (
+            histogram_quantile(0.95, sum by (le, backend) (rate(gateway_request_duration_seconds_bucket{backend="simule"}[5m]))) > 2.5
+            and
+            sum by (backend) (increase(gateway_request_duration_seconds_count{backend="simule"}[5m])) >= 20
+          )
+        for: 2m
+        labels:
+          severity: page
+          slo: latency
+          service: orion-gateway
+        annotations:
+          summary: "Dépassement du SLO de latence p95 sur le backend {{ $labels.backend }}"
+          description: "La latence p95 sur 5 min dépasse le seuil du SLO (12 s pour ollama, 2,5 s pour simule)."
+
+      - alert: OrionSLOQualiteTicket
+        expr: |
+          (
+            sum(rate(quality_reference_checks_total{result="bad"}[15m]))
+            /
+            sum(rate(quality_reference_checks_total[15m]))
+          ) > 0.10
+          and
+          sum(increase(quality_reference_checks_total[15m])) >= 5
+        for: 2m
+        labels:
+          severity: ticket
+          slo: quality
+          service: orion-rag
+        annotations:
+          summary: "Dégradation du SLO de qualité sur les questions de référence (< 90 %)"
+          description: "Plus de 10 % des contrôles synthétiques de référence ont échoué sur les 15 dernières minutes."
+
+      - alert: OrionQuotaEquipeRejetsTicket
+        expr: sum by (team) (increase(gateway_quota_rejections_total[5m])) >= 10
+        for: 1m
+        labels:
+          severity: ticket
+          service: orion-gateway
+        annotations:
+          summary: "Rejets de quota (HTTP 429) pour l'équipe {{ $labels.team }}"
+          description: "Au moins 10 requêtes de l'équipe {{ $labels.team }} ont été rejetées pour dépassement de quota sur 5 min."
+
+      - alert: OrionAbsenceDeTraficPage
+        expr: |
+          absent(traefik_service_requests_total{service="rag@file"})
+          or
+          sum(rate(traefik_service_requests_total{service="rag@file"}[5m])) == 0
+          or
+          probe_success{job="blackbox"} == 0
+        for: 2m
+        labels:
+          severity: page
+          service: orion-rag
+        annotations:
+          summary: "Absence de trafic ou échec de la sonde HTTPS sur Traefik"
+          description: "Aucune requête n'est observée sur le service rag@file depuis 5 min ou la sonde blackbox HTTPS échoue."
+
+      # TODO(lab-2b): ajouter l'alerte OrionWorkerFraicheurIndexationTicket (severity: ticket, service: orion-worker)
+      # lorsque l'indexation documentaire du worker ne progresse plus.

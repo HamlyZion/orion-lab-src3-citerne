@@ -1,0 +1,28 @@
+groups:
+  - name: orion-plateforme-legacy
+    rules:
+      - alert: OrionInferenceMicroJitter
+        expr: >
+          (
+            (
+              sum(rate(gateway_request_duration_seconds_sum{backend="simule",route="/v1/chat/completions"}[1m]))
+              /
+              clamp_min(sum(rate(gateway_request_duration_seconds_count{backend="simule",route="/v1/chat/completions"}[1m])), 1e-9)
+            )
+            /
+            clamp_max(
+              clamp_min(
+                sum(rate(gateway_request_duration_seconds_sum{backend="simule",route="/v1/chat/completions"}[1h]))
+                /
+                clamp_min(sum(rate(gateway_request_duration_seconds_count{backend="simule",route="/v1/chat/completions"}[1h])), 1e-9),
+                0.5
+              ),
+              1.5
+            )
+          ) > 1.45
+        labels:
+          severity: warning
+          service: gateway
+        annotations:
+          summary: "Variation rapide du temps moyen de génération sur le backend simulé"
+          description: "Le ratio de la moyenne glissante sur 1 minute par rapport à la référence glissante (1h) dépasse 1,45 sans clause de maintien (SLO fixé à p95 < 20 s sur 5 minutes)."

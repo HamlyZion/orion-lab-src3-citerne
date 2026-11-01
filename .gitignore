@@ -1,0 +1,27 @@
+# Configuration locale et secrets (clés d'équipe générées par make check)
+.env
+.env.*
+!.env.example
+
+# Journal et état de la console d'incident
+.orion-state/
+
+# Exports de preuves et dumps
+exports/
+dumps/
+*.dump
+*.sql.gz
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Système
+.DS_Store
+
+# Certificats TLS générés localement
+config/traefik/certs/*.key
+config/traefik/certs/*.crt
+config/traefik/certs/*.srl
+

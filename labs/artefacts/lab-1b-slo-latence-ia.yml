@@ -1,0 +1,34 @@
+# Proposition générée par un assistant pour le suivi du SLO de latence d'Orion Gateway.
+# À auditer et rectifier avant toute mise en production (Lab 1b — Étape 4).
+
+groups:
+  - name: orion_slo_latence_proposition_ia
+    interval: 10s
+    rules:
+      - record: backend:orion_gateway_latency_p95:rate3m
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (backend) (rate(gateway_request_duration_seconds_bucket[3m]))
+          )
+
+      - record: backend:orion_gateway_latency_p95:rate5m
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (backend) (rate(gateway_request_duration_seconds_bucket[5m]))
+          )
+
+      - alert: OrionSLOLatenceAssistantPage
+        expr: |
+          backend:orion_gateway_latency_p95:rate3m > 2.5
+          and
+          backend:orion_gateway_latency_p95:rate5m > 2.5
+        for: 10m
+        labels:
+          severity: page
+          slo: latency
+          service: orion-gateway
+        annotations:
+          summary: "Latence p95 élevée sur le backend {{ $labels.backend }}"
+          description: "Le 95e centile de latence dépasse 2,5 s sur 3 min et 5 min."

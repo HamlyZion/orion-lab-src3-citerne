@@ -1,0 +1,915 @@
+# Jeu fixe de 300 questions pour le profil de charge k6 d'Orion (100 par équipe : support, rh, dev)
+# Contrat d'interfaces v1.1 (§6 et §10)
+
+questions:
+  # =========================================================================
+  # Équipe support (100 questions : K6-SUP-001 à K6-SUP-100)
+  # =========================================================================
+  - id: K6-SUP-001
+    team: support
+    question: "Quel port UDP et quelle adresse de passerelle sont utilisés par le concentrateur VPN WireGuard de Lyon ?"
+  - id: K6-SUP-002
+    team: support
+    question: "Quelle vérification est obligatoire avant de réinitialiser les jetons TOTP d'un collaborateur dans Sésame ?"
+  - id: K6-SUP-003
+    team: support
+    question: "Quel est le délai de prise en charge d'une alerte critique par l'ingénieur d'astreinte N2 et quel poste téléphonique permet l'escalade ?"
+  - id: K6-SUP-004
+    team: support
+    question: "Quelle est la durée de validité des certificats TLS internes délivrés par l'autorité Coffre chez Nordel ?"
+  - id: K6-SUP-005
+    team: support
+    question: "Quelles sont les adresses IP des deux résolveurs DNS Unbound internes des salles serveurs de Lyon et de Lille ?"
+  - id: K6-SUP-006
+    team: support
+    question: "Dans quel répertoire temporaire faut-il restaurer les fichiers depuis un dépôt Restic avant vérification ?"
+  - id: K6-SUP-007
+    team: support
+    question: "Sur quel port TCP les serveurs d'impression de Boréal envoient-ils les flux ZPL aux imprimantes thermiques d'entrepôt ?"
+  - id: K6-SUP-008
+    team: support
+    question: "Quel identifiant de VLAN est attribué aux postes bureautiques des collaborateurs sur les commutateurs d'accès ?"
+  - id: K6-SUP-009
+    team: support
+    question: "Où sont conservées les clés de récupération LUKS et BitLocker des postes de travail gérés par la DSI ?"
+  - id: K6-SUP-010
+    team: support
+    question: "Après combien d'échecs consécutifs de la sonde ICMP le routeur de site bascule-t-il sur le lien 4G de secours ?"
+  - id: K6-SUP-011
+    team: support
+    question: "Quelle est la durée maximale d'activation d'un compte Sésame attribué à un prestataire externe ?"
+  - id: K6-SUP-012
+    team: support
+    question: "À quelle fréquence la DSI de Nordel réalise-t-elle un exercice complet de restauration des sauvegardes critiques ?"
+  - id: K6-SUP-013
+    team: support
+    question: "Rotation des clés ?"
+  - id: K6-SUP-014
+    team: support
+    question: "Quelle est l'adresse IP publique du concentrateur VPN WireGuard secondaire de Lille ?"
+  - id: K6-SUP-015
+    team: support
+    question: "Dans quel sous-réseau interne les postes clients VPN WireGuard reçoivent-ils leur adresse IP ?"
+  - id: K6-SUP-016
+    team: support
+    question: "Quelle commande sur le bastion permet de révoquer immédiatement la clé WireGuard d'un utilisateur sur les deux sites ?"
+  - id: K6-SUP-017
+    team: support
+    question: "Pendant combien d'heures l'adresse IP VPN d'un pair révoqué est-elle gelée avant réattribution ?"
+  - id: K6-SUP-018
+    team: support
+    question: "Vers quelle file Balise faut-il transférer un ticket de réinitialisation VPN lié à un vol d'ordinateur portable ?"
+  - id: K6-SUP-019
+    team: support
+    question: "Comment un technicien d'entrepôt sans caméra fait-il valider sa demande de réinitialisation MFA Sésame ?"
+  - id: K6-SUP-020
+    team: support
+    question: "Combien de codes de secours à usage unique Sésame génère-t-il lors de l'enrôlement d'un nouveau jeton TOTP ?"
+  - id: K6-SUP-021
+    team: support
+    question: "Quelle est la durée de validité du code QR d'enrôlement affiché par Sésame ?"
+  - id: K6-SUP-022
+    team: support
+    question: "Quels événements dans l'onglet Events de Sésame confirment la réussite d'une réinitialisation TOTP ?"
+  - id: K6-SUP-023
+    team: support
+    question: "Quels sont les horaires couverts par l'astreinte technique N2 en semaine ?"
+  - id: K6-SUP-024
+    team: support
+    question: "Avant quelle heure du matin l'ingénieur d'astreinte N2 doit-il publier son compte rendu d'intervention nocturne ?"
+  - id: K6-SUP-025
+    team: support
+    question: "Quelle commande journalctl est recommandée pour sauvegarder les journaux récents avant de redémarrer un service en astreinte ?"
+  - id: K6-SUP-026
+    team: support
+    question: "À combien de jours avant l'échéance d'un certificat TLS interne la supervision ouvre-t-elle un ticket d'avertissement ?"
+  - id: K6-SUP-027
+    team: support
+    question: "Sous quel seuil en jours l'alerte d'expiration d'un certificat TLS interne passe-t-elle en sévérité critique ?"
+  - id: K6-SUP-028
+    team: support
+    question: "Quelle commande vault write permet d'émettre un certificat serveur interne depuis l'autorité PKI de Coffre ?"
+  - id: K6-SUP-029
+    team: support
+    question: "Avec quel utilitaire faut-il détruire le fichier JSON temporaire contenant la clé privée sur le poste d'administration ?"
+  - id: K6-SUP-030
+    team: support
+    question: "Quelles permissions et quel groupe système doivent être appliqués au fichier privkey.pem sur un serveur Linux Nordel ?"
+  - id: K6-SUP-031
+    team: support
+    question: "Pourquoi un résolveur DNS Unbound en panne provoque-t-il une latence fixe de 5 secondes sur les clients Linux ?"
+  - id: K6-SUP-032
+    team: support
+    question: "Sur quel port local écoute le serveur DNS d'autorité NSD derrière Unbound sur dns1.dc1-lyon ?"
+  - id: K6-SUP-033
+    team: support
+    question: "Quelle commande nsd-control force le transfert immédiat de la zone interne.nordel.example vers le serveur secondaire de Lille ?"
+  - id: K6-SUP-034
+    team: support
+    question: "Comment vider le cache DNS de la zone interne.nordel.example dans Unbound après une correction d'enregistrement ?"
+  - id: K6-SUP-035
+    team: support
+    question: "Dans quel dépôt Git sur Forge les modifications manuelles de zone DNS doivent-elles être reportées ?"
+  - id: K6-SUP-036
+    team: support
+    question: "À quelle heure de la nuit les sauvegardes Restic des serveurs Linux de Nordel se déclenchent-elles ?"
+  - id: K6-SUP-037
+    team: support
+    question: "Sous quel chemin de Coffre le mot de passe du dépôt Restic d'un serveur est-il stocké ?"
+  - id: K6-SUP-038
+    team: support
+    question: "Quelle est la politique de rétention standard des instantanés Restic quotidiens, hebdomadaires et mensuels ?"
+  - id: K6-SUP-039
+    team: support
+    question: "Quelle marge d'espace disque libre faut-il vérifier sur /srv/restore-staging avant de lancer une extraction Restic ?"
+  - id: K6-SUP-040
+    team: support
+    question: "Dans quelle plage d'identifiants de VM libres faut-il restaurer une machine virtuelle de test sur Proxmox ?"
+  - id: K6-SUP-041
+    team: support
+    question: "Combien d'imprimantes thermiques ZPL sont déployées sur les quais de Vénissieux et de Lille ?"
+  - id: K6-SUP-042
+    team: support
+    question: "Que signifie un voyant PAUSE orange fixe ou clignotant sur une imprimante thermique de quai ?"
+  - id: K6-SUP-043
+    team: support
+    question: "Quelle commande ZPL envoyée avec netcat sur le port 9100 force le redémarrage logiciel d'une imprimante thermique ?"
+  - id: K6-SUP-044
+    team: support
+    question: "Où se trouve le fichier de mire de test ZPL sur le serveur cups-prod.interne.nordel.example ?"
+  - id: K6-SUP-045
+    team: support
+    question: "Quelle commande lpadmin permet de rediriger temporairement les impressions d'un quai en panne vers le quai voisin ?"
+  - id: K6-SUP-046
+    team: support
+    question: "À quoi correspondent les VLAN 100, 120, 130, 140 et 190 sur les commutateurs de Nordel ?"
+  - id: K6-SUP-047
+    team: support
+    question: "Quel est le code couleur des cordons RJ45 catégorie 6A dans les baies de brassage de Nordel ?"
+  - id: K6-SUP-048
+    team: support
+    question: "Quelle est la limite port-security maximum configurée sur un port de commutateur raccordant un poste et un téléphone IP ?"
+  - id: K6-SUP-049
+    team: support
+    question: "Sur quel numéro de VLAN parking faut-il basculer un port de prise murale inutilisé avant de le désactiver ?"
+  - id: K6-SUP-050
+    team: support
+    question: "Quelle commande CLI permet de vérifier l'équipement voisin découvert en LLDP sur un port de commutateur ?"
+  - id: K6-SUP-051
+    team: support
+    question: "Quelles sont les adresses IP des deux serveurs DHCP Kea dans les salles serveurs de Lyon et de Lille ?"
+  - id: K6-SUP-052
+    team: support
+    question: "Quelle plage d'adresses IPv4 est attribuée au pool dynamique DHCP dans un sous-réseau d'agence en /24 ?"
+  - id: K6-SUP-053
+    team: support
+    question: "Quel message dans les journaux de kea-dhcp4-server indique l'épuisement des adresses disponibles dans un pool ?"
+  - id: K6-SUP-054
+    team: support
+    question: "Quelle est la durée standard en secondes d'un bail DHCP sur le VLAN bureautique 120 ?"
+  - id: K6-SUP-055
+    team: support
+    question: "Dans quel fichier CSV local Kea DHCP conserve-t-il la liste des baux IPv4 actifs ?"
+  - id: K6-SUP-056
+    team: support
+    question: "Quels sont les deux réseaux SSID diffusés par les bornes Wi-Fi des entrepôts de Nordel ?"
+  - id: K6-SUP-057
+    team: support
+    question: "Quelle largeur de canal en 5 GHz est imposée sur les bornes Wi-Fi d'entrepôt pour limiter les interférences ?"
+  - id: K6-SUP-058
+    team: support
+    question: "En dessous de quel seuil RSSI ou SNR un terminal mobile d'entrepôt subit-il des coupures en allée ?"
+  - id: K6-SUP-059
+    team: support
+    question: "Pourquoi une puissance d'émission supérieure à 17 dBm sur une borne Wi-Fi d'entrepôt nuit-elle à l'itinérance des douchettes ?"
+  - id: K6-SUP-060
+    team: support
+    question: "En moins de combien de millisecondes le basculement 802.11r entre deux bornes Wi-Fi d'allée doit-il s'effectuer ?"
+  - id: K6-SUP-061
+    team: support
+    question: "Quel est le quota de stockage par défaut attribué lors de la création d'une boîte aux lettres fonctionnelle partagée ?"
+  - id: K6-SUP-062
+    team: support
+    question: "Dans quelle branche de l'annuaire LDAP Sésame les groupes d'accès aux boîtes partagées sont-ils créés ?"
+  - id: K6-SUP-063
+    team: support
+    question: "Quelle commande postmap permet de vérifier qu'un utilisateur est autorisé à émettre au nom d'une boîte partagée ?"
+  - id: K6-SUP-064
+    team: support
+    question: "Quelle erreur SMTP Postfix renvoie-t-il lorsqu'un collaborateur tente d'envoyer un courriel avec une adresse From non déléguée ?"
+  - id: K6-SUP-065
+    team: support
+    question: "Quel numéro d'emplacement keyslot LUKS2 contient la clé de secours administrateur sur les postes Linux de Nordel ?"
+  - id: K6-SUP-066
+    team: support
+    question: "Quelle commande PowerShell permet de suspendre BitLocker pendant un redémarrage après une mise à jour UEFI ?"
+  - id: K6-SUP-067
+    team: support
+    question: "Pourquoi faut-il régénérer une clé de secours LUKS ou BitLocker après l'avoir dictée à un utilisateur à distance ?"
+  - id: K6-SUP-068
+    team: support
+    question: "Quelles sont les trois étiquettes obligatoires à déclarer pour chaque cible dans targets/http-interne.yaml ?"
+  - id: K6-SUP-069
+    team: support
+    question: "En moins de combien de millisecondes une route /healthz doit-elle répondre pour être utilisée par les sondes de disponibilité ?"
+  - id: K6-SUP-070
+    team: support
+    question: "Quelle commande curl sur le port 9115 permet de tester manuellement une sonde HTTP avant fusion dans Forge ?"
+  - id: K6-SUP-071
+    team: support
+    question: "Quelles métriques de route distinguent le tunnel IPsec fibre wan1 et le tunnel 4G wan2 sur un routeur de site ?"
+  - id: K6-SUP-072
+    team: support
+    question: "Qu'appelle-t-on un lien gris sur la liaison fibre d'un entrepôt ou d'une agence ?"
+  - id: K6-SUP-073
+    team: support
+    question: "Quel niveau minimal de signal RSRP faut-il vérifier sur le modem 4G avant de forcer une bascule WAN ?"
+  - id: K6-SUP-074
+    team: support
+    question: "Quels flux réseau sont bloqués par la politique QOS-WAN-SECOURS lorsqu'un site fonctionne sur son lien 4G ?"
+  - id: K6-SUP-075
+    team: support
+    question: "À quels seuils d'occupation un volume XFS sur les serveurs Samba fs1 et fs2 déclenche-t-il un avertissement puis une alerte critique ?"
+  - id: K6-SUP-076
+    team: support
+    question: "Quelle commande xfs_quota affiche l'état de consommation des quotas par direction métier sur /srv/partages ?"
+  - id: K6-SUP-077
+    team: support
+    question: "Comment vider les fichiers de plus de 50 Mo présents dans la corbeille réseau Samba d'un partage saturé ?"
+  - id: K6-SUP-078
+    team: support
+    question: "Quelles commandes LVM et XFS permettent d'agrandir à chaud le volume /srv/partages de 100 Go sans coupure ?"
+  - id: K6-SUP-079
+    team: support
+    question: "À quels numéros internes à 4 chiffres correspondent les files Asterisk du support (4000), de l'astreinte N2 (4200) et de la sécurité (4911) ?"
+  - id: K6-SUP-080
+    team: support
+    question: "À quel moment de la semaine le numéro mobile de renvoi de la file d'astreinte 4200 est-il mis à jour dans Asterisk ?"
+  - id: K6-SUP-081
+    team: support
+    question: "Quelle touche DTMF l'ingénieur d'astreinte doit-il presser lors de l'appel de test du vendredi à 16h45 ?"
+  - id: K6-SUP-082
+    team: support
+    question: "Quelle commande asterisk -rx permet de vérifier l'état d'enregistrement des trunks SIP opérateurs sur pbx1 ?"
+  - id: K6-SUP-083
+    team: support
+    question: "Quel préfixe de nom d'utilisateur est obligatoire dans Sésame pour le compte d'un intervenant externe ?"
+  - id: K6-SUP-084
+    team: support
+    question: "Dans quel sous-réseau VPN filtré les prestataires externes reçoivent-ils leur adresse IP WireGuard ?"
+  - id: K6-SUP-085
+    team: support
+    question: "Par quel canal le mot de passe initial temporaire d'un prestataire externe lui est-il transmis ?"
+  - id: K6-SUP-086
+    team: support
+    question: "Quels sont les horaires des deux vacations de journée de l'équipe support en semaine ?"
+  - id: K6-SUP-087
+    team: support
+    question: "Quelle est la durée maximale autorisée d'un silence posé sur une alerte de production sans accord du responsable d'exploitation ?"
+  - id: K6-SUP-088
+    team: support
+    question: "Quelles informations obligatoires doivent figurer dans le commentaire d'un silence d'alerte ?"
+  - id: K6-SUP-089
+    team: support
+    question: "Quels sont les quatre points obligatoires du billet de passation rédigé dans Balise à 15h00 et à 18h00 ?"
+  - id: K6-SUP-090
+    team: support
+    question: "À partir de combien de déclenchements sans action humaine dans la semaine une alerte est-elle revue lors de la réunion du jeudi ?"
+  - id: K6-SUP-091
+    team: support
+    question: "Quels sont les engagements de RPO et de RTO pour les services vitaux de Palier 1 dans le PRA de Nordel ?"
+  - id: K6-SUP-092
+    team: support
+    question: "Qui a seul l'autorité de déclencher une bascule PRA complète de dc1-lyon vers dc2-lille ?"
+  - id: K6-SUP-093
+    team: support
+    question: "À quel mois de l'année a lieu l'exercice annuel de bascule PRA en conditions réelles entre Lyon et Lille ?"
+  - id: K6-SUP-094
+    team: support
+    question: "Quelle est la période de rétention matérielle incompressible des sauvegardes immuables sur les baies de Nordel ?"
+  - id: K6-SUP-095
+    team: support
+    question: "Quels sont les créneaux horaires autorisés du lundi au jeudi pour les changements applicatifs sans coupure ?"
+  - id: K6-SUP-096
+    team: support
+    question: "Quelles sont les deux périodes annuelles de gel des changements (freeze) sur l'ERP Boréal et le réseau d'entrepôt ?"
+  - id: K6-SUP-097
+    team: support
+    question: "Que doit faire un collaborateur dans Thunderbird lorsqu'il reçoit un courriel suspect d'hameçonnage ?"
+  - id: K6-SUP-098
+    team: support
+    question: "Pourquoi ne faut-il pas éteindre électriquement un poste après un clic sur un lien de phishing mais seulement couper le réseau ?"
+  - id: K6-SUP-099
+    team: support
+    question: "Quel est le délai de temporisation d'évacuation avant un lâcher de gaz d'extinction IG-55 en salle serveur ?"
+  - id: K6-SUP-100
+    team: support
+    question: "Quels groupes de collaborateurs disposent d'un droit d'accès physique autonome aux salles serveurs dc1-lyon et dc2-lille ?"
+
+  # =========================================================================
+  # Équipe rh (100 questions : K6-RH-001 à K6-RH-100)
+  # =========================================================================
+  - id: K6-RH-001
+    team: rh
+    question: "Dans quel délai avant l'arrivée d'un salarié le service RH doit-il ouvrir le ticket de création de compte dans Balise ?"
+  - id: K6-RH-002
+    team: rh
+    question: "À quelle heure les accès Sésame et VPN d'un collaborateur sortant sont-ils désactivés le jour de son départ ?"
+  - id: K6-RH-003
+    team: rh
+    question: "Combien de jours de RTT annuels sont crédités pour un ingénieur au forfait jours chez Nordel ?"
+  - id: K6-RH-004
+    team: rh
+    question: "Quel est le montant de l'indemnité forfaitaire pour une semaine complète d'astreinte technique chez Nordel ?"
+  - id: K6-RH-005
+    team: rh
+    question: "Quel est le nombre maximal de jours de télétravail hebdomadaire autorisé par l'avenant standard chez Nordel ?"
+  - id: K6-RH-006
+    team: rh
+    question: "Quel est le plafond de remboursement d'un repas du soir lors d'un déplacement professionnel hors de Lyon et Lille ?"
+  - id: K6-RH-007
+    team: rh
+    question: "Sous quel délai un salarié doit-il transmettre son avis d'arrêt de travail au service RH de Nordel ?"
+  - id: K6-RH-008
+    team: rh
+    question: "À quelle adresse interne faut-il envoyer une demande de prise en charge d'une certification technique ?"
+  - id: K6-RH-009
+    team: rh
+    question: "Qui valide le calendrier des semaines en école d'un alternant lors de son intégration chez Nordel ?"
+  - id: K6-RH-010
+    team: rh
+    question: "Quelle est l'adresse électronique de la référente RH chargée de la cellule d'écoute et de signalement chez Nordel ?"
+  - id: K6-RH-011
+    team: rh
+    question: "Après quelle durée d'utilisation un ordinateur portable professionnel fait-il l'objet d'un renouvellement chez Nordel ?"
+  - id: K6-RH-012
+    team: rh
+    question: "À quelle date limite du mois les heures d'intervention d'astreinte doivent-elles être saisies dans Hélia pour passer sur la paie du mois en cours ?"
+  - id: K6-RH-013
+    team: rh
+    question: "Quelles pièces administratives doivent être réunies dans Hélia lors de la constitution du dossier d'embauche ?"
+  - id: K6-RH-014
+    team: rh
+    question: "Dans quel délai avant la prise de poste la déclaration préalable à l'embauche (DPAE) est-elle transmise à l'URSSAF ?"
+  - id: K6-RH-015
+    team: rh
+    question: "Quels sont les trois profils types de postes de travail sélectionnables dans le ticket d'arrivée Balise ?"
+  - id: K6-RH-016
+    team: rh
+    question: "À quel jour de la semaine et à quelle heure ont lieu les accueils d'intégration des nouveaux embauchés à Lyon et Lille ?"
+  - id: K6-RH-017
+    team: rh
+    question: "Quelle est la durée initiale de la période d'essai pour un technicien et pour un ingénieur cadre chez Nordel ?"
+  - id: K6-RH-018
+    team: rh
+    question: "Au bout de combien de jours après l'arrivée a lieu l'entretien de suivi et de rapport d'étonnement avec les RH ?"
+  - id: K6-RH-019
+    team: rh
+    question: "Dans quelle file Balise le responsable administration du personnel ouvre-t-il le dossier confidentiel de départ d'un salarié ?"
+  - id: K6-RH-020
+    team: rh
+    question: "Quels équipements un collaborateur quittant l'entreprise doit-il rapporter lors de son rendez-vous de restitution ?"
+  - id: K6-RH-021
+    team: rh
+    question: "Que devient la boîte aux lettres électronique nominative d'un salarié après son départ de Nordel ?"
+  - id: K6-RH-022
+    team: rh
+    question: "Pendant combien de jours le poste portable restitué par un salarié sortant est-il gardé en quarantaine avant effacement ?"
+  - id: K6-RH-023
+    team: rh
+    question: "Sous quel délai après la fin du contrat le certificat de travail et l'attestation France Travail sont-ils envoyés ?"
+  - id: K6-RH-024
+    team: rh
+    question: "Quelle est la période légale d'acquisition des congés payés chez Nordel et combien de jours ouvrés sont acquis par an ?"
+  - id: K6-RH-025
+    team: rh
+    question: "Avant quelle date les souhaits de congés principaux d'été doivent-ils être saisis dans Hélia ?"
+  - id: K6-RH-026
+    team: rh
+    question: "Quel est le délai de prévenance dans Hélia pour poser une absence de congés de 4 jours consécutifs ou plus ?"
+  - id: K6-RH-027
+    team: rh
+    question: "Combien de jours de RTT collectifs au maximum la direction peut-elle fixer chaque année pour un pont chômé ?"
+  - id: K6-RH-028
+    team: rh
+    question: "Dans quels cas exceptionnels le report des congés payés non pris après le 31 mai est-il accordé ?"
+  - id: K6-RH-029
+    team: rh
+    question: "Quelle est la fréquence maximale d'ouverture d'un droit à congé exceptionnel pour déménagement personnel ?"
+  - id: K6-RH-030
+    team: rh
+    question: "Quelle ancienneté minimale est requise pour qu'un ingénieur intègre le planning d'astreinte technique de la DSI ?"
+  - id: K6-RH-031
+    team: rh
+    question: "Quel supplément forfaitaire brut est versé lorsqu'un jour férié tombe pendant une semaine d'astreinte ?"
+  - id: K6-RH-032
+    team: rh
+    question: "Quels sont les taux de majoration des heures d'intervention d'astreinte en soirée de semaine et de nuit ?"
+  - id: K6-RH-033
+    team: rh
+    question: "Quelle est la durée minimale du repos quotidien ininterrompu garantie après une intervention d'astreinte nocturne ?"
+  - id: K6-RH-034
+    team: rh
+    question: "À partir de combien d'heures d'intervention sur un week-end une demi-journée de récupération est-elle créditée dans Hélia ?"
+  - id: K6-RH-035
+    team: rh
+    question: "Combien de jours de télétravail par semaine de présence en entreprise sont autorisés pour un alternant ?"
+  - id: K6-RH-036
+    team: rh
+    question: "Quels sont les deux jours de la semaine privilégiés pour la présence collective sur site des équipes de la DSI ?"
+  - id: K6-RH-037
+    team: rh
+    question: "Combien de techniciens du support informatique doivent être physiquement présents sur site chaque jour ouvré ?"
+  - id: K6-RH-038
+    team: rh
+    question: "Quels justificatifs le salarié doit-il joindre dans Hélia pour demander son avenant annuel de télétravail ?"
+  - id: K6-RH-039
+    team: rh
+    question: "Quel est le montant journalier et le plafond mensuel de l'allocation forfaitaire de télétravail versée par Nordel ?"
+  - id: K6-RH-040
+    team: rh
+    question: "Avec quel préavis un responsable peut-il suspendre une journée de télétravail en cas d'incident majeur ?"
+  - id: K6-RH-041
+    team: rh
+    question: "Quel est le plafond de remboursement d'un déjeuner en déplacement professionnel et qu'advient-il du titre-restaurant du jour ?"
+  - id: K6-RH-042
+    team: rh
+    question: "Quels sont les plafonds de remboursement d'une nuitée d'hôtel petit-déjeuner inclus en province et à Paris ou Lille ?"
+  - id: K6-RH-043
+    team: rh
+    question: "Dans quels cas un technicien du support est-il autorisé à utiliser son véhicule personnel pour un déplacement ?"
+  - id: K6-RH-044
+    team: rh
+    question: "Avant quel jour du mois suivant les notes de frais doivent-elles être soumises à validation dans Hélia ?"
+  - id: K6-RH-045
+    team: rh
+    question: "Pourquoi le seul ticket de carte bancaire ne suffit-il pas comme justificatif de note de frais dans Hélia ?"
+  - id: K6-RH-046
+    team: rh
+    question: "À quelle date du mois est exécuté le virement bancaire de remboursement des notes de frais validées ?"
+  - id: K6-RH-047
+    team: rh
+    question: "Comment demander une avance sur frais pour un déplacement professionnel d'une semaine complète ?"
+  - id: K6-RH-048
+    team: rh
+    question: "Avant quelle heure un collaborateur malade doit-il prévenir son responsable s'il travaille sur la vacation du matin du support ?"
+  - id: K6-RH-049
+    team: rh
+    question: "Dans quel délai après l'embauche a lieu la visite d'information et de prévention auprès du service de santé au travail ?"
+  - id: K6-RH-050
+    team: rh
+    question: "Quels postes techniques de Nordel relèvent d'un suivi individuel renforcé (SIR) à la médecine du travail ?"
+  - id: K6-RH-051
+    team: rh
+    question: "À partir de quelle durée d'arrêt maladie une visite médicale de reprise est-elle obligatoire dans les 8 jours suivant le retour ?"
+  - id: K6-RH-052
+    team: rh
+    question: "Dans quel délai un accident du travail ou de trajet doit-il être signalé aux RH puis déclaré sur net-entreprises ?"
+  - id: K6-RH-053
+    team: rh
+    question: "Combien de passages d'un même examen de certification technique Nordel accepte-t-elle de financer ?"
+  - id: K6-RH-054
+    team: rh
+    question: "De combien de temps de préparation sur son temps de travail un salarié dispose-t-il avant un examen de certification ?"
+  - id: K6-RH-055
+    team: rh
+    question: "Sous quel délai après une formation le salarié doit-il déposer son attestation d'assiduité dans Hélia ?"
+  - id: K6-RH-056
+    team: rh
+    question: "Quelle est l'expérience minimale requise dans le métier pour être désigné maître d'apprentissage ou tuteur chez Nordel ?"
+  - id: K6-RH-057
+    team: rh
+    question: "Quel motif d'absence codifie les semaines de cours en CFA ou en école d'ingénieurs dans Hélia ?"
+  - id: K6-RH-058
+    team: rh
+    question: "Quelle est la conséquence d'une absence injustifiée en cours à l'école sur le bulletin de paie d'un alternant ?"
+  - id: K6-RH-059
+    team: rh
+    question: "De combien de jours de congé supplémentaire de révision un apprenti dispose-t-il avant ses épreuves finales ?"
+  - id: K6-RH-060
+    team: rh
+    question: "Que se passe-t-il sur la période d'essai et l'ancienneté lorsqu'un alternant est embauché en CDI à la fin de son contrat ?"
+  - id: K6-RH-061
+    team: rh
+    question: "Pendant combien de jours un poste ouvert est-il publié en priorité sur la bourse à l'emploi interne Hélia ?"
+  - id: K6-RH-062
+    team: rh
+    question: "Quelle est l'ancienneté minimale dans son poste actuel pour postuler à une mobilité interne chez Nordel ?"
+  - id: K6-RH-063
+    team: rh
+    question: "À quel moment le manager d'origine est-il informé de la candidature interne d'un membre de son équipe ?"
+  - id: K6-RH-064
+    team: rh
+    question: "Quelle est la durée de la période probatoire prévue dans un avenant de mobilité interne ?"
+  - id: K6-RH-065
+    team: rh
+    question: "Quel est le délai maximal de transition entre l'ancienne et la nouvelle équipe après validation d'une mobilité interne ?"
+  - id: K6-RH-066
+    team: rh
+    question: "Quel est le plafond de prise en charge des frais de déménagement lors d'une mutation géographique entre Lyon et Lille ?"
+  - id: K6-RH-067
+    team: rh
+    question: "Quelle est la différence entre l'entretien annuel d'évaluation et l'entretien professionnel biennal dans Hélia ?"
+  - id: K6-RH-068
+    team: rh
+    question: "Quelles sont les dates d'ouverture et de clôture de la campagne annuelle des entretiens dans Hélia ?"
+  - id: K6-RH-069
+    team: rh
+    question: "Combien de jours avant son entretien annuel le collaborateur doit-il compléter son auto-évaluation dans Hélia ?"
+  - id: K6-RH-070
+    team: rh
+    question: "Pourquoi est-il interdit de fixer un objectif individuel basé uniquement sur le nombre brut de tickets fermés ?"
+  - id: K6-RH-071
+    team: rh
+    question: "Tous les combien d'années de présence continue a lieu l'état des lieux récapitulatif du parcours professionnel ?"
+  - id: K6-RH-072
+    team: rh
+    question: "Quel est le numéro de poste téléphonique interne du responsable administration du personnel en cas d'urgence sur site ?"
+  - id: K6-RH-073
+    team: rh
+    question: "Sous quel délai la référente RH accuse-t-elle réception d'un signalement confidentiel de harcèlement ?"
+  - id: K6-RH-074
+    team: rh
+    question: "Dans quel délai maximal une enquête interne contradictoire est-elle menée avec le référent CSE après un signalement ?"
+  - id: K6-RH-075
+    team: rh
+    question: "Comment un collaborateur ou un alternant accède-t-il gratuitement à la cellule de soutien psychologique externe ?"
+  - id: K6-RH-076
+    team: rh
+    question: "Quelle est la configuration matérielle standard de l'ordinateur portable remis aux ingénieurs dev et support ?"
+  - id: K6-RH-077
+    team: rh
+    question: "Quels profils de collaborateurs sont éligibles à l'attribution d'un smartphone professionnel 4G/5G ?"
+  - id: K6-RH-078
+    team: rh
+    question: "Quelle est la durée du cycle de renouvellement d'un téléphone mobile professionnel chez Nordel ?"
+  - id: K6-RH-079
+    team: rh
+    question: "En combien de temps l'équipe SUP-N1 fournit-elle un poste de prêt en cas de panne matérielle sous garantie ?"
+  - id: K6-RH-080
+    team: rh
+    question: "Quelles démarches un salarié doit-il accomplir dans les 24 heures suivant le vol de son ordinateur portable à l'extérieur ?"
+  - id: K6-RH-081
+    team: rh
+    question: "Pourquoi Nordel ne revend-elle pas les ordinateurs portables réformés en fin de cycle aux collaborateurs ?"
+  - id: K6-RH-082
+    team: rh
+    question: "À quelle date du mois les compteurs d'absences et les notes de frais sont-ils arrêtés pour la paie en cours ?"
+  - id: K6-RH-083
+    team: rh
+    question: "À quelle date du mois l'ordre de virement SEPA des salaires est-il émis par le pôle paie de Nordel ?"
+  - id: K6-RH-084
+    team: rh
+    question: "Avant quel jour du mois un changement d'IBAN doit-il être validé dans Hélia pour s'appliquer au virement du mois ?"
+  - id: K6-RH-085
+    team: rh
+    question: "Avant quelle date et quelle heure du mois un salarié peut-il demander un acompte sur salaire dans Hélia ?"
+  - id: K6-RH-086
+    team: rh
+    question: "À partir de quel montant d'erreur matérielle sur la paie un virement de régularisation hors paie est-il exécuté sous 48 heures ?"
+  - id: K6-RH-087
+    team: rh
+    question: "À quel niveau de classification de confidentialité appartiennent les dossiers individuels du personnel et les bulletins de paie ?"
+  - id: K6-RH-088
+    team: rh
+    question: "Pourquoi les adresses électroniques nominatives des dossiers RH ne doivent-elles jamais figurer en clair dans les journaux applicatifs ?"
+  - id: K6-RH-089
+    team: rh
+    question: "Comment un salarié exerce-t-il son droit d'accès ou de rectification RGPD auprès du DPO de Nordel ?"
+  - id: K6-RH-090
+    team: rh
+    question: "Dans quel délai légal une violation de données à caractère personnel doit-elle être notifiée à la CNIL ?"
+  - id: K6-RH-091
+    team: rh
+    question: "Pourquoi les équipes support et dev n'ont-elles pas accès aux documents du périmètre rh dans Orion ?"
+  - id: K6-RH-092
+    team: rh
+    question: "À quelles périodes de l'année a lieu la revue semestrielle des habilitations Sésame pour l'équipe RH ?"
+  - id: K6-RH-093
+    team: rh
+    question: "Est-il autorisé de coller un extrait de dossier salarié Hélia dans un assistant IA externe sur Internet ?"
+  - id: K6-RH-094
+    team: rh
+    question: "Quels sont les engagements de RPO et de RTO du portail SIRH Hélia dans le plan de reprise d'activité de Nordel ?"
+  - id: K6-RH-095
+    team: rh
+    question: "À quelle boîte fonctionnelle RH faut-il écrire pour une question portant sur un acompte ou un bulletin de salaire ?"
+  - id: K6-RH-096
+    team: rh
+    question: "Qui coordonne la revue salariale annuelle et le suivi des certifications obtenues par les collaborateurs ?"
+  - id: K6-RH-097
+    team: rh
+    question: "Quel est le délai accordé au manager pour rédiger la synthèse dans Hélia après la tenue de l'entretien annuel ?"
+  - id: K6-RH-098
+    team: rh
+    question: "De combien de jours calendaires dispose le salarié pour commenter et signer électroniquement son compte rendu d'entretien annuel ?"
+  - id: K6-RH-099
+    team: rh
+    question: "Qui valide l'attribution d'un second écran 24 pouces pour le télétravail à domicile ?"
+  - id: K6-RH-100
+    team: rh
+    question: "Dans quel délai un collaborateur en télétravail doit-il déclarer un changement d'adresse de domicile aux RH ?"
+
+  # =========================================================================
+  # Équipe dev (100 questions : K6-DEV-001 à K6-DEV-100)
+  # =========================================================================
+  - id: K6-DEV-001
+    team: dev
+    question: "Dans quel en-tête HTTP et sous quel format une équipe transmet-elle sa clé d'accès lors d'un appel à Orion ?"
+  - id: K6-DEV-002
+    team: dev
+    question: "Quel code HTTP renvoie la passerelle d'Orion lorsqu'une équipe a consommé l'intégralité de son quota de tokens ?"
+  - id: K6-DEV-003
+    team: dev
+    question: "Combien d'approbations de revue de code sont requises dans Forge avant de fusionner une branche vers main ?"
+  - id: K6-DEV-004
+    team: dev
+    question: "Dans quel dépôt Git Argo CD lit-il les manifestes de déploiement des applications de Nordel ?"
+  - id: K6-DEV-005
+    team: dev
+    question: "Quelle règle s'applique à la suppression d'une colonne PostgreSQL dans une migration Alembic de Boréal ?"
+  - id: K6-DEV-006
+    team: dev
+    question: "Dans quel mode de mutualisation PgBouncer est-il configuré devant la base PostgreSQL de l'ERP Boréal ?"
+  - id: K6-DEV-007
+    team: dev
+    question: "Sous quel préfixe de chemin les secrets propres à l'application Boréal sont-ils stockés dans Coffre ?"
+  - id: K6-DEV-008
+    team: dev
+    question: "Quelles sont les deux architectures matérielles obligatoires lors de la publication d'une image conteneur sur le registre interne de Nordel ?"
+  - id: K6-DEV-009
+    team: dev
+    question: "Quel en-tête HTTP standard transporte l'identifiant de trace W3C entre les microservices de Nordel ?"
+  - id: K6-DEV-010
+    team: dev
+    question: "Quel critère de temps de réponse au 95e percentile doit être respecté lors d'un tir k6 de validation sur l'API de Boréal ?"
+  - id: K6-DEV-011
+    team: dev
+    question: "Quelle commande permet d'annuler immédiatement une livraison défectueuse de Boréal dans Argo CD ?"
+  - id: K6-DEV-012
+    team: dev
+    question: "Dans quelle file morte (dead-letter queue) RabbitMQ dépose-t-il les bons d'expédition de Boréal après trois échecs de traitement ?"
+  - id: K6-DEV-013
+    team: dev
+    question: "Sous quel chemin de Coffre la clé d'équipe d'Orion est-elle stockée pour chaque périmètre ?"
+  - id: K6-DEV-014
+    team: dev
+    question: "Quel code HTTP renvoie Orion lorsqu'une requête est envoyée sans en-tête Authorization valide ?"
+  - id: K6-DEV-015
+    team: dev
+    question: "Quels sont les deux champs JSON retournés par la route POST /ask d'Orion ?"
+  - id: K6-DEV-016
+    team: dev
+    question: "À quelle fréquence les clés d'équipe sk-nordel-… font-elles l'objet d'une rotation programmée ?"
+  - id: K6-DEV-017
+    team: dev
+    question: "Quelle est la durée de la période de recouvrement pendant laquelle l'ancienne clé d'équipe Orion reste acceptée lors d'une rotation trimestrielle ?"
+  - id: K6-DEV-018
+    team: dev
+    question: "Qui faut-il alerter dans Balise si une clé sk-nordel-… a été poussée par erreur dans un commit sur Forge ?"
+  - id: K6-DEV-019
+    team: dev
+    question: "Est-il permis d'utiliser la clé d'une autre équipe lorsque l'équipe dev reçoit une erreur HTTP 429 sur Orion ?"
+  - id: K6-DEV-020
+    team: dev
+    question: "Comment demander une hausse temporaire du quota de tokens d'une équipe pour une session de formation interne ?"
+  - id: K6-DEV-021
+    team: dev
+    question: "Quels sont les trois préfixes normalisés pour le nommage des branches Git de travail dans Forge ?"
+  - id: K6-DEV-022
+    team: dev
+    question: "Quelle est la longueur maximale recommandée pour la première ligne d'un message de commit Git chez Nordel ?"
+  - id: K6-DEV-023
+    team: dev
+    question: "Quelles sont les quatre étapes bloquantes exécutées par le runner CI de Forge à chaque poussée sur une branche Python ?"
+  - id: K6-DEV-024
+    team: dev
+    question: "Quelle est la taille maximale recommandée en lignes modifiées pour une Pull Request soumise à la revue dans Forge ?"
+  - id: K6-DEV-025
+    team: dev
+    question: "Qui doit obligatoirement figurer parmi les deux approbateurs lorsqu'une Pull Request modifie un schéma PostgreSQL ?"
+  - id: K6-DEV-026
+    team: dev
+    question: "Quels modes de fusion sont autorisés sur la branche main dans Forge et pourquoi les merges inversés sont-ils interdits ?"
+  - id: K6-DEV-027
+    team: dev
+    question: "Quel outil de gestion de manifestes est utilisé dans le dépôt infra/gitops-manifests pour séparer base et overlays ?"
+  - id: K6-DEV-028
+    team: dev
+    question: "Quelle est la différence de politique de synchronisation Argo CD entre l'environnement de recette et la production ?"
+  - id: K6-DEV-029
+    team: dev
+    question: "Que fait Argo CD si un nouveau conteneur ne passe pas sa readinessProbe au bout de 90 secondes lors d'un déploiement ?"
+  - id: K6-DEV-030
+    team: dev
+    question: "Quel est le rôle de l'option selfHeal d'Argo CD lorsqu'une modification manuelle est tentée sur le cluster ?"
+  - id: K6-DEV-031
+    team: dev
+    question: "En quoi consistent les deux phases d'expansion et de contraction lors d'une évolution de schéma PostgreSQL avec Alembic ?"
+  - id: K6-DEV-032
+    team: dev
+    question: "Quelle taille de lot (BATCH_SIZE) est recommandée pour le job de rattrapage des lignes historiques lors d'une migration additive ?"
+  - id: K6-DEV-033
+    team: dev
+    question: "Pourquoi faut-il utiliser postgresql_concurrently=True lors de la création d'un index Alembic sur la table expeditions_colis ?"
+  - id: K6-DEV-034
+    team: dev
+    question: "Quelles valeurs de lock_timeout et de statement_timeout sont appliquées dans env.py au début de chaque migration Alembic ?"
+  - id: K6-DEV-035
+    team: dev
+    question: "Combien de temps faut-il attendre après la livraison de la phase 1 avant de supprimer l'ancienne colonne PostgreSQL en phase 2 ?"
+  - id: K6-DEV-036
+    team: dev
+    question: "À quelles valeurs sont réglés max_client_conn et reserve_pool_size dans le PgBouncer de l'ERP Boréal ?"
+  - id: K6-DEV-037
+    team: dev
+    question: "Quelles fonctionnalités PostgreSQL sont incompatibles avec le mode pool_mode = transaction de PgBouncer ?"
+  - id: K6-DEV-038
+    team: dev
+    question: "Quelles tailles min_size et max_size sont utilisées par psycopg_pool.ConnectionPool dans chaque worker Python de Boréal ?"
+  - id: K6-DEV-039
+    team: dev
+    question: "Quel paramètre faut-il passer à psycopg 3 pour désactiver les requêtes préparées automatiques derrière PgBouncer ?"
+  - id: K6-DEV-040
+    team: dev
+    question: "Quel rôle PostgreSQL de Boréal est seul autorisé à se connecter directement au port 5432 sans passer par PgBouncer ?"
+  - id: K6-DEV-041
+    team: dev
+    question: "Sous quel chemin de Coffre sont stockés les secrets applicatifs du portail SIRH Hélia ?"
+  - id: K6-DEV-042
+    team: dev
+    question: "Comment l'opérateur External Secrets Operator injecte-t-il les secrets de Coffre dans les conteneurs déployés par Argo CD ?"
+  - id: K6-DEV-043
+    team: dev
+    question: "En quoi consiste le mécanisme des comptes alternés user_a et user_b pour la rotation sans coupure des mots de passe PostgreSQL ?"
+  - id: K6-DEV-044
+    team: dev
+    question: "Quelle commande kubectl annotate force la synchronisation immédiate d'un ExternalSecret après une révocation d'urgence dans Coffre ?"
+  - id: K6-DEV-045
+    team: dev
+    question: "Quelle image de base Debian Python est imposée pour les Dockerfile multi-étapes de l'équipe dev ?"
+  - id: K6-DEV-046
+    team: dev
+    question: "Sous quel identifiant UID non privilégié les conteneurs applicatifs Python de Nordel doivent-ils s'exécuter ?"
+  - id: K6-DEV-047
+    team: dev
+    question: "Pourquoi le tag Docker :latest est-il refusé par le registre Harbor registry.interne.nordel.example ?"
+  - id: K6-DEV-048
+    team: dev
+    question: "Quelle commande docker buildx build est exécutée par les pipelines de Forge pour publier une image multi-architecture ?"
+  - id: K6-DEV-049
+    team: dev
+    question: "Que fait le registre Harbor lorsque le scanner Trivy détecte une vulnérabilité CRITICAL disposant d'un correctif dans une image ?"
+  - id: K6-DEV-050
+    team: dev
+    question: "Au bout de combien de jours les images de branches de développement non fusionnées sont-elles purgées du registre interne ?"
+  - id: K6-DEV-051
+    team: dev
+    question: "Quels sont les cinq champs obligatoires dans chaque ligne de log JSON émise par un service de Nordel ?"
+  - id: K6-DEV-052
+    team: dev
+    question: "Pourquoi est-il interdit de formater une trace d'exception Python sur plusieurs lignes séparées sur stdout ?"
+  - id: K6-DEV-053
+    team: dev
+    question: "Quel est le format exact des quatre segments de l'en-tête W3C traceparent ?"
+  - id: K6-DEV-054
+    team: dev
+    question: "Quel niveau de log par défaut est configuré en production et pourquoi les routes /healthz en 200 sont-elles exclues ?"
+  - id: K6-DEV-055
+    team: dev
+    question: "Quel type Pydantic permet d'empêcher l'affichage en clair d'un champ sensible dans les journaux d'application ?"
+  - id: K6-DEV-056
+    team: dev
+    question: "Quels sont les quatre paramètres à renseigner obligatoirement dans un objet httpx.Timeout en Python ?"
+  - id: K6-DEV-057
+    team: dev
+    question: "Quels sont les délais connect et read de référence pour un appel HTTP entre deux services internes de Boréal ?"
+  - id: K6-DEV-058
+    team: dev
+    question: "Quel délai read est appliqué aux appels HTTP sortants de Boréal vers les API externes des transporteurs ?"
+  - id: K6-DEV-059
+    team: dev
+    question: "À quelle condition une requête HTTP POST de création d'expédition peut-elle faire l'objet d'un réessai automatique ?"
+  - id: K6-DEV-060
+    team: dev
+    question: "Quels codes d'erreur HTTP clients ne doivent jamais déclencher de réessai automatique dans les clients HTTP de Boréal ?"
+  - id: K6-DEV-061
+    team: dev
+    question: "Comment Boréal traite-t-il une opération métier dont la durée dépasse régulièrement 10 secondes ?"
+  - id: K6-DEV-062
+    team: dev
+    question: "Quelle étiquette faut-il ajouter sur une Pull Request dans Forge pour instancier un environnement éphémère de recette ?"
+  - id: K6-DEV-063
+    team: dev
+    question: "Vers quel bouchon interne les connecteurs transporteurs et SMTP sont-ils redirigés dans un environnement preview-pr ?"
+  - id: K6-DEV-064
+    team: dev
+    question: "Quels sont les quotas de CPU et de RAM appliqués à chaque espace de noms éphémère preview-pr sur le cluster de recette ?"
+  - id: K6-DEV-065
+    team: dev
+    question: "À quelle heure du soir les conteneurs des environnements éphémères de recette sont-ils mis en veille automatique ?"
+  - id: K6-DEV-066
+    team: dev
+    question: "Quelle est la durée de vie maximale d'un environnement éphémère de prévisualisation avant suppression automatique ?"
+  - id: K6-DEV-067
+    team: dev
+    question: "Quelle option est obligatoire lors de l'appel à uv sync ou pip install dans les pipelines CI de Forge ?"
+  - id: K6-DEV-068
+    team: dev
+    question: "Quelle est l'adresse du miroir PyPI interne utilisé par les runners de Forge et les postes de développement ?"
+  - id: K6-DEV-069
+    team: dev
+    question: "Quel outil vérifie l'absence de vulnérabilités connues dans uv.lock lors de l'étape security-deps du pipeline ?"
+  - id: K6-DEV-070
+    team: dev
+    question: "À quel jour du mois a lieu la mise à jour mensuelle groupée des dépendances mineures Python dans l'équipe dev ?"
+  - id: K6-DEV-071
+    team: dev
+    question: "Quelle est la durée maximale d'une exclusion temporaire de vulnérabilité dans le fichier .pip-audit.toml ?"
+  - id: K6-DEV-072
+    team: dev
+    question: "Sur quel environnement dédié les tirs de charge k6 de validation de Boréal doivent-ils être lancés ?"
+  - id: K6-DEV-073
+    team: dev
+    question: "Quelle graine aléatoire fixe (--seed) et quel débit maximal sont utilisés par le script perf/k6/expedition-peak.js ?"
+  - id: K6-DEV-074
+    team: dev
+    question: "Quel est le taux maximal d'échec http_req_failed toléré lors d'un tir k6 de validation avant mise en production ?"
+  - id: K6-DEV-075
+    team: dev
+    question: "Pendant combien de minutes après une mise en production de Boréal le développeur et la vigie support surveillent-ils le service ?"
+  - id: K6-DEV-076
+    team: dev
+    question: "Pourquoi un retour arrière applicatif de Boréal ne nécessite-t-il pas d'exécuter un alembic downgrade à chaud en production ?"
+  - id: K6-DEV-077
+    team: dev
+    question: "Quelle action Git doit obligatoirement suivre une commande argocd app rollback boreal-prod exécutée en urgence ?"
+  - id: K6-DEV-078
+    team: dev
+    question: "Quel type de file RabbitMQ répliquée par Raft est obligatoire pour les messages métier de Boréal ?"
+  - id: K6-DEV-079
+    team: dev
+    question: "Quels sont les trois en-têtes obligatoires dans chaque message JSON publié sur un échange RabbitMQ de Boréal ?"
+  - id: K6-DEV-080
+    team: dev
+    question: "Quelle valeur de prefetch_count et quel mode d'acquittement sont configurés sur les consommateurs Python de RabbitMQ ?"
+  - id: K6-DEV-081
+    team: dev
+    question: "Quelle commande de l'outil boreal-dlq-cli permet de rejouer les messages rectifiés depuis la file morte vers l'échange d'origine ?"
+  - id: K6-DEV-082
+    team: dev
+    question: "À quels sous-réseaux CIDR correspondent la zone applicative de recette, la zone de production et la zone bases de données ?"
+  - id: K6-DEV-083
+    team: dev
+    question: "Combien de jours ouvrés avant la mise en recette faut-il déposer une demande d'ouverture de flux réseau dans Balise ?"
+  - id: K6-DEV-084
+    team: dev
+    question: "Par quel proxy sortant filtrant doivent passer les appels HTTP sortants d'un serveur applicatif vers un partenaire externe ?"
+  - id: K6-DEV-085
+    team: dev
+    question: "Dans quel dépôt Git Ansible les règles de pare-feu validées par SUP-N2 et SEC-OPS sont-elles enregistrées ?"
+  - id: K6-DEV-086
+    team: dev
+    question: "Au bout de combien de jours sans aucun paquet observé (hit count à zéro) une règle de pare-feu fait-elle l'objet d'une suppression ?"
+  - id: K6-DEV-087
+    team: dev
+    question: "Quelle est la longueur minimale du mot de passe principal dans l'annuaire Sésame ?"
+  - id: K6-DEV-088
+    team: dev
+    question: "Quelle est l'adresse de l'instance Vaultwarden interne mise à disposition pour les mots de passe des portails tiers ?"
+  - id: K6-DEV-089
+    team: dev
+    question: "À quels niveaux de classification (C0 à C3) correspondent respectivement la documentation dev et les secrets stockés dans Coffre ?"
+  - id: K6-DEV-090
+    team: dev
+    question: "Quels sont les trois rôles répartis obligatoirement lors de l'ouverture d'une cellule d'incident majeur chez Nordel ?"
+  - id: K6-DEV-091
+    team: dev
+    question: "Dans quel délai après la clôture d'un incident majeur le post-mortem sans blâme doit-il être rédigé ?"
+  - id: K6-DEV-092
+    team: dev
+    question: "Pourquoi est-il interdit de copier du code source de Boréal ou des adresses internes dans un assistant IA externe ?"
+  - id: K6-DEV-093
+    team: dev
+    question: "Quelles sont les URL internes de Boréal, d'Hélia, de Balise, de Sésame, de Coffre et de Forge ?"
+  - id: K6-DEV-094
+    team: dev
+    question: "À quels périmètres documentaires d'Orion la clé de l'équipe dev donne-t-elle accès ?"
+  - id: K6-DEV-095
+    team: dev
+    question: "Quel est le palier de criticité PRA et quels sont les objectifs RPO et RTO de la forge Git interne et d'Orion ?"
+  - id: K6-DEV-096
+    team: dev
+    question: "Quelle est la fréquence d'archivage des journaux de transactions WAL des bases PostgreSQL de Boréal et d'Hélia ?"
+  - id: K6-DEV-097
+    team: dev
+    question: "Pourquoi aucune mise en production applicative normale n'est-elle autorisée le vendredi chez Nordel ?"
+  - id: K6-DEV-098
+    team: dev
+    question: "À quel moment d'une fenêtre de maintenance un intervenant doit-il appliquer son plan de retour arrière en cas d'imprévu ?"
+  - id: K6-DEV-099
+    team: dev
+    question: "Que doit faire un développeur si Orion renvoie une réponse avec un tableau sources vide ?"
+  - id: K6-DEV-100
+    team: dev
+    question: "Dans quelle file Balise faut-il signaler un écart lorsqu'une procédure récemment mise à jour n'apparaît pas dans les réponses d'Orion ?"

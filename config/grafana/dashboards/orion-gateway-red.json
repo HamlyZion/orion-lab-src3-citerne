@@ -1,0 +1,325 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "enable": true,
+        "expr": "gateway_real_routing_paused == 1",
+        "iconColor": "orange",
+        "name": "Suspension du routage réel (bail RCA)",
+        "step": "10s",
+        "titleFormat": "Routage Ollama suspendu (RCA)"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "description": "La légende des courbes se lit « équipe — backend » : l'équipe qui pose la question, le backend qui répond. ollama est le vrai modèle de langage (qwen3:1.7b) : il rédige une vraie réponse, mais il est lent. simule est un LLM simulé (le service llm-sim) : il ne rédige rien, il recopie le début du passage le plus proche, avec une latence artificielle calquée sur celle d'un vrai modèle. La Gateway répartit les requêtes entre les deux : la part d'Ollama (ORION_OLLAMA_RATIO dans .env) est mesurée par make check selon la machine, 25 % au plus, 0 % en mode allégé. Le simulé sert donc 75 à 100 % du trafic : il produit un volume réaliste sans saturer les ordinateurs et permet des pannes reproductibles.",
+      "title": "Débit de requêtes Gateway par équipe et backend (Rate)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (team, backend) (rate(gateway_requests_total[1m]))",
+          "legendFormat": "{{team}} — {{backend}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 2,
+      "description": "La légende des courbes se lit « équipe — backend » : l'équipe qui pose la question, le backend qui répond. ollama est le vrai modèle de langage (qwen3:1.7b) : il rédige une vraie réponse, mais il est lent. simule est un LLM simulé (le service llm-sim) : il ne rédige rien, il recopie le début du passage le plus proche, avec une latence artificielle calquée sur celle d'un vrai modèle. La Gateway répartit les requêtes entre les deux : la part d'Ollama (ORION_OLLAMA_RATIO dans .env) est mesurée par make check selon la machine, 25 % au plus, 0 % en mode allégé. Le simulé sert donc 75 à 100 % du trafic : il produit un volume réaliste sans saturer les ordinateurs et permet des pannes reproductibles. En marche normale, ce panneau est vide : c'est le résultat attendu lorsqu'aucune erreur 5xx ni rejet de quota 429 ne survient.",
+      "title": "Erreurs HTTP 5xx et rejets par équipe et backend (Errors)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (team, backend, code) (rate(gateway_requests_total{code=~\"5..\"}[1m]))",
+          "legendFormat": "5xx {{team}} ({{backend}} - {{code}})",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (team) (rate(gateway_quota_rejections_total[1m]))",
+          "legendFormat": "Quota 429 {{team}}",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 3,
+      "description": "La légende des courbes se lit « équipe — backend » : l'équipe qui pose la question, le backend qui répond. ollama est le vrai modèle de langage (qwen3:1.7b) : il rédige une vraie réponse, mais il est lent. simule est un LLM simulé (le service llm-sim) : il ne rédige rien, il recopie le début du passage le plus proche, avec une latence artificielle calquée sur celle d'un vrai modèle. La Gateway répartit les requêtes entre les deux : la part d'Ollama (ORION_OLLAMA_RATIO dans .env) est mesurée par make check selon la machine, 25 % au plus, 0 % en mode allégé. Le simulé sert donc 75 à 100 % du trafic : il produit un volume réaliste sans saturer les ordinateurs et permet des pannes reproductibles. Le p50 (médiane) représente le temps sous lequel répondent 50 % des requêtes. Le p95 (95e percentile) représente le temps sous lequel répondent 95 % des requêtes, isolant la queue de latence et les requêtes ralenties.",
+      "title": "Latence Gateway p50 / p95 par backend et exemplars (Duration)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "exemplar": true,
+          "expr": "histogram_quantile(0.95, sum by (le, backend) (rate(gateway_request_duration_seconds_bucket[5m])))",
+          "legendFormat": "p95 {{backend}}",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "exemplar": false,
+          "expr": "histogram_quantile(0.50, sum by (le, backend) (rate(gateway_request_duration_seconds_bucket[5m])))",
+          "legendFormat": "p50 {{backend}}",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 4,
+      "title": "TTFT p95 et durée de chargement du modèle par backend",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, backend) (rate(gateway_ttft_seconds_bucket[5m])))",
+          "legendFormat": "TTFT p95 {{backend}}",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, backend) (rate(gateway_load_duration_seconds_bucket[5m])))",
+          "legendFormat": "Load duration p95 {{backend}}",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "cps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "id": 5,
+      "title": "Débit de tokens par équipe, backend et direction",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (team, backend, direction) (rate(gateway_tokens_total[1m]))",
+          "legendFormat": "{{team}} — {{backend}} ({{direction}})",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "id": 6,
+      "title": "Cache d'embeddings (hit/miss) et file d'attente Gateway",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (result) (rate(gateway_embed_cache_requests_total[1m]))",
+          "legendFormat": "Cache embed {{result}}/s",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "gateway_queue_depth",
+          "legendFormat": "Profondeur de file (queue_depth)",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "id": 7,
+      "title": "Durée p95 par étape du pipeline RAG et attente du pool PostgreSQL",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, stage) (rate(rag_stage_duration_seconds_bucket[5m])))",
+          "legendFormat": "Étape RAG p95 : {{stage}}",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(rag_db_pool_wait_seconds_bucket[5m])))",
+          "legendFormat": "Attente pool DB p95",
+          "refId": "B"
+        }
+      ]
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "tags": ["orion", "gateway", "red"],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "timezone": "browser",
+  "title": "Orion — Gateway LLM (RED par équipe et backend)",
+  "uid": "orion-gateway-red",
+  "version": 1
+}

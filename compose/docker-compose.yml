@@ -1,0 +1,462 @@
+name: orion
+
+services:
+  traefik:
+    image: traefik:v3.7.16
+    restart: unless-stopped
+    mem_limit: 128m
+    ports:
+      - "127.0.0.1:8443:443"
+    volumes:
+      - ../config/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ../config/traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - ../config/traefik/certs:/etc/traefik/certs:ro
+    networks:
+      - app
+      - obs
+
+  rag:
+    image: ${ORION_RAG_IMAGE:-ghcr.io/jassouline/orion-rag:sha-6edc2c2}
+    restart: unless-stopped
+    mem_limit: 256m
+    # TODO(lab-3): surcharger command avec opentelemetry-instrument pour auto-instrumenter FastAPI, httpx et psycopg
+    environment:
+      OTEL_SERVICE_NAME: orion-rag
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_SEMCONV_STABILITY_OPT_IN: http
+      # TODO(lab-3): définir OTEL_RESOURCE_ATTRIBUTES (service.version, deployment.environment)
+      DATABASE_URL: postgresql://orion:${POSTGRES_PASSWORD:-orion}@postgres:5432/orion
+      RAG_DB_DSN: postgresql://orion:${POSTGRES_PASSWORD:-orion}@postgres:5432/orion
+      GATEWAY_URL: http://gateway-llm:8000
+      RAG_GATEWAY_URL: http://gateway-llm:8000
+      GATEWAY_TIMEOUT_SECONDS: "35"
+      RAG_GATEWAY_TIMEOUT_SECONDS: "35"
+      ORION_SPAN_METIER_PATH: /opt/orion/span-metier/span_metier.py
+      FLAGD_HOST: flagd
+      FLAGD_PORT: "8013"
+      ORION_KEY_SUPPORT: ${ORION_KEY_SUPPORT:-}
+      ORION_KEY_RH: ${ORION_KEY_RH:-}
+      ORION_KEY_DEV: ${ORION_KEY_DEV:-}
+    volumes:
+      - ../span-metier:/opt/orion/span-metier:ro
+    networks:
+      - app
+      - back
+      - obs
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+      gateway:
+        condition: service_started
+      toxiproxy:
+        condition: service_started
+
+  gateway:
+    image: ${ORION_GATEWAY_IMAGE:-ghcr.io/jassouline/orion-gateway:sha-6edc2c2}
+    restart: unless-stopped
+    mem_limit: 256m
+    environment:
+      OTEL_SERVICE_NAME: orion-gateway
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_SEMCONV_STABILITY_OPT_IN: http
+      DATABASE_URL: postgresql://orion:${POSTGRES_PASSWORD:-orion}@postgres:5433/orion
+      GATEWAY_DB_DSN: postgresql://orion:${POSTGRES_PASSWORD:-orion}@postgres:5433/orion
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_BACKEND_URL: http://ollama:11434
+      LLM_SIM_URL: http://llm-simule:11435
+      LLMSIM_BACKEND_URL: http://llm-simule:11435
+      # Aucun chat k6 vers Ollama ; les embeddings y restent.
+      ORION_OLLAMA_RATIO: "0.0001"
+      GATEWAY_ATTEMPT_TIMEOUT_SECONDS: "20"
+      GATEWAY_TOTAL_TIMEOUT_SECONDS: "30"
+      FLAGD_HOST: flagd
+      FLAGD_PORT: "8013"
+      ORION_KEY_SUPPORT: ${ORION_KEY_SUPPORT:-}
+      ORION_KEY_RH: ${ORION_KEY_RH:-}
+      ORION_KEY_DEV: ${ORION_KEY_DEV:-}
+    networks:
+      - app
+      - back
+      - obs
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+      llm-sim:
+        condition: service_started
+      toxiproxy:
+        condition: service_started
+
+  worker:
+    image: ${ORION_WORKER_IMAGE:-ghcr.io/jassouline/orion-worker:sha-6edc2c2}
+    restart: unless-stopped
+    mem_limit: 512m
+    # TODO(lab-3): surcharger command avec opentelemetry-instrument pour auto-instrumenter le worker
+    environment:
+      OTEL_SERVICE_NAME: orion-worker
+      # TODO(lab-3): activer l'export OTLP vers http://alloy:4317 et définir OTEL_RESOURCE_ATTRIBUTES
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_SEMCONV_STABILITY_OPT_IN: http
+      DATABASE_URL: postgresql://orion:${POSTGRES_PASSWORD:-orion}@postgres:5434/orion
+      WORKER_DB_DSN: postgresql://orion:${POSTGRES_PASSWORD:-orion}@postgres:5434/orion
+      GATEWAY_URL: http://gateway-llm:8001
+      WORKER_GATEWAY_URL: http://gateway-llm:8001
+      WORKER_API_KEY: ${ORION_KEY_DEV:-}
+      FLAGD_HOST: flagd
+      FLAGD_PORT: "8013"
+    networks:
+      - app
+      - back
+      - obs
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+      toxiproxy:
+        condition: service_started
+
+  llm-sim:
+    image: ${ORION_LLM_SIM_IMAGE:-ghcr.io/jassouline/orion-llm-sim:sha-6edc2c2}
+    restart: unless-stopped
+    mem_limit: 128m
+    environment:
+      FLAGD_HOST: flagd
+      FLAGD_PORT: "8013"
+      # Marche normale sans chat Ollama : 2 places et décodage à 120 jetons/s.
+      SIM_CAPACITY_SLOTS: "2"
+      SIM_DECODE_TOKENS_PER_SEC: "120"
+    networks:
+      - app
+      - back
+
+  postgres-db:
+    image: pgvector/pgvector:0.8.7-pg17-bookworm
+    restart: unless-stopped
+    mem_limit: 512m
+    shm_size: 256m
+    environment:
+      POSTGRES_USER: orion
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-orion}
+      POSTGRES_DB: orion
+    volumes:
+      - orion-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orion -d orion"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+      start_period: 60s
+    networks:
+      - back
+
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:2.12.0
+    restart: unless-stopped
+    mem_limit: 64m
+    command:
+      - "-host=${ORION_TOXIPROXY_IP:-10.200.84.10}"
+      - "-config=/etc/toxiproxy/toxiproxy.json"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ../config/toxiproxy/toxiproxy.json:/etc/toxiproxy/toxiproxy.json:ro
+    networks:
+      app:
+        aliases:
+          - postgres
+          - gateway-llm
+          - ollama
+          - llm-simule
+      back: {}
+      chaos-net:
+        ipv4_address: ${ORION_TOXIPROXY_IP:-10.200.84.10}
+
+  flagd:
+    image: ghcr.io/open-feature/flagd:v0.18.0
+    restart: unless-stopped
+    mem_limit: 64m
+    command:
+      - "start"
+      - "--port"
+      - "8013"
+      - "--uri"
+      - "file:/flags/flags.json"
+    volumes:
+      - orion-flags:/flags:ro
+    networks:
+      - app
+
+  prometheus:
+    image: prom/prometheus:v3.13.5
+    restart: unless-stopped
+    mem_limit: 512m
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=24h"
+      - "--enable-feature=exemplar-storage"
+      - "--web.enable-lifecycle"
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ../config/prometheus:/etc/prometheus:ro
+      - orion-promdata:/prometheus
+    networks:
+      - back
+      - obs
+
+  alertmanager:
+    image: prom/alertmanager:v0.34.1
+    restart: unless-stopped
+    mem_limit: 64m
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
+    ports:
+      - "127.0.0.1:9093:9093"
+    volumes:
+      - ../config/alertmanager:/etc/alertmanager:ro
+    networks:
+      - obs
+
+  grafana:
+    image: grafana/grafana:13.0.11-slim
+    restart: unless-stopped
+    mem_limit: 256m
+    environment:
+      GOMEMLIMIT: 205MiB
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      GF_PLUGINS_PREINSTALL_DISABLED: "true"
+      GF_PLUGINS_PUBLIC_KEY_RETRIEVAL_DISABLED: "true"
+      GF_USERS_DEFAULT_THEME: "dark"
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ../config/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../config/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - orion-grafanadata:/var/lib/grafana
+    networks:
+      - obs
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+
+  loki:
+    image: grafana/loki:3.7.9
+    restart: unless-stopped
+    mem_limit: 512m
+    environment:
+      GOMEMLIMIT: 450MiB
+    command:
+      - "-config.file=/etc/loki/loki.yaml"
+    volumes:
+      - ../config/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - orion-lokidata:/loki
+    networks:
+      - obs
+
+  tempo:
+    image: grafana/tempo:3.1.1
+    restart: unless-stopped
+    mem_limit: 512m
+    environment:
+      GOMEMLIMIT: 450MiB
+    command:
+      - "-config.file=/etc/tempo/tempo.yaml"
+    volumes:
+      - ../config/tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - orion-tempodata:/var/tempo
+    networks:
+      - obs
+
+  alloy:
+    image: grafana/alloy:v1.21.2
+    restart: unless-stopped
+    mem_limit: 256m
+    environment:
+      GOMEMLIMIT: 205MiB
+    command:
+      - "run"
+      - "--server.http.listen-addr=0.0.0.0:12345"
+      - "--storage.path=/var/lib/alloy/data"
+      - "--disable-reporting"
+      - "/etc/alloy/config.alloy"
+    volumes:
+      - ../config/alloy:/etc/alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - orion-alloydata:/var/lib/alloy/data
+    networks:
+      - obs
+    depends_on:
+      - loki
+      - tempo
+
+  node-exporter:
+    image: prom/node-exporter:v1.12.1
+    restart: unless-stopped
+    mem_limit: 64m
+    command:
+      - "--path.rootfs=/host"
+    pid: host
+    volumes:
+      - /:/host:ro
+    networks:
+      - back
+
+  cadvisor:
+    image: ghcr.io/google/cadvisor:v0.60.6
+    restart: unless-stopped
+    mem_limit: 384m
+    environment:
+      GOMEMLIMIT: 300MiB
+    command:
+      - "--housekeeping_interval=15s"
+      - "--max_housekeeping_interval=30s"
+      - "--storage_duration=30s"
+      - "--docker_only=true"
+      - "--disable_root_cgroup_stats=true"
+      - "--store_container_labels=false"
+      - "--disable_metrics=advtcp,cpu_topology,cpuset,disk,diskIO,hugetlb,memory_numa,percpu,perf_event,process,referenced_memory,resctrl,sched,tcp,udp"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - back
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.20.1
+    restart: unless-stopped
+    mem_limit: 64m
+    environment:
+      DATA_SOURCE_NAME: postgresql://orion:${POSTGRES_PASSWORD:-orion}@postgres-db:5432/orion?sslmode=disable
+    networks:
+      - back
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.29.1
+    restart: unless-stopped
+    mem_limit: 64m
+    command:
+      - "--config.file=/etc/blackbox/blackbox.yml"
+    volumes:
+      - ../config/blackbox/blackbox.yml:/etc/blackbox/blackbox.yml:ro
+      - ../config/traefik/certs/ca.crt:/etc/blackbox/certs/ca.crt:ro
+    networks:
+      - app
+      - back
+    depends_on:
+      - traefik
+
+  k6:
+    image: grafana/k6:1.8.2
+    restart: unless-stopped
+    mem_limit: 256m
+    command:
+      - "run"
+      - "/k6/load.js"
+    environment:
+      ORION_BASE_URL: https://traefik
+      ORION_KEY_SUPPORT: ${ORION_KEY_SUPPORT:-}
+      ORION_KEY_RH: ${ORION_KEY_RH:-}
+      ORION_KEY_DEV: ${ORION_KEY_DEV:-}
+      K6_SEED: "42"
+    volumes:
+      - ../k6:/k6:ro
+    networks:
+      - app
+    depends_on:
+      - traefik
+
+  tools:
+    image: ${ORION_TOOLS_IMAGE:-ghcr.io/jassouline/orion-tools:sha-aafd849}
+    restart: unless-stopped
+    mem_limit: 192m
+    environment:
+      DATABASE_URL: postgresql://orion:${POSTGRES_PASSWORD:-orion}@postgres-db:5432/orion
+      PROMETHEUS_URL: http://prometheus:9090
+      LOKI_URL: http://loki:3100
+      TEMPO_URL: http://tempo:3200
+      TOXIPROXY_URL: http://${ORION_TOXIPROXY_IP:-10.200.84.10}:8474
+      TRAEFIK_URL: https://traefik
+      ORION_KEY_SUPPORT: ${ORION_KEY_SUPPORT:-}
+      ORION_KEY_RH: ${ORION_KEY_RH:-}
+      ORION_KEY_DEV: ${ORION_KEY_DEV:-}
+    ports:
+      - "127.0.0.1:8088:8088"
+    volumes:
+      - orion-flags:/flags
+      - ../.orion-state:/state
+      - ../exports/rca:/exports:ro
+    networks:
+      - app
+      - back
+      - obs
+      - chaos-net
+
+  rca:
+    image: ${ORION_TOOLS_IMAGE:-ghcr.io/jassouline/orion-tools:sha-aafd849}
+    profiles:
+      - rca
+    mem_limit: 256m
+    working_dir: /rca
+    command: ["python3", "run_rca.py"]
+    environment:
+      PROMETHEUS_URL: http://prometheus:9090
+      LOKI_URL: http://loki:3100
+      TEMPO_URL: http://tempo:3200
+      OTEL_SERVICE_NAME: orion-rca
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
+      OTEL_SEMCONV_STABILITY_OPT_IN: http
+      GATEWAY_INTERNAL_URL: http://gateway:8090
+      OLLAMA_URL: ${OLLAMA_RCA_URL:-http://host.docker.internal:11434}
+      ORION_RCA_MODE: ${ORION_RCA_MODE:-raw}
+      ORION_RCA_MODEL: ${ORION_RCA_MODEL:-qwen3:1.7b}
+      OLLAMA_RCA_NUM_THREAD: ${OLLAMA_RCA_NUM_THREAD:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ../rca:/rca:ro
+      - ../exports/rca:/exports
+    networks:
+      - back
+      - obs
+
+networks:
+  app:
+    driver: bridge
+  back:
+    driver: bridge
+  obs:
+    driver: bridge
+  chaos-net:
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: ${ORION_CHAOS_SUBNET:-10.200.84.0/24}
+
+volumes:
+  orion-pgdata:
+  orion-flags:
+  orion-promdata:
+  orion-grafanadata:
+  orion-lokidata:
+  orion-tempodata:
+  orion-alloydata:

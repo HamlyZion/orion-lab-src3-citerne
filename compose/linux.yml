@@ -1,0 +1,28 @@
+services:
+  ollama-svc:
+    image: ollama/ollama:0.40.9
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:11435:11434"
+    environment:
+      OLLAMA_MAX_LOADED_MODELS: "2"
+      OLLAMA_NUM_PARALLEL: "1"
+    volumes:
+      - ${ORION_OLLAMA_MODELS_DIR:-orion-ollama}:/root/.ollama
+    networks:
+      - back
+
+  toxiproxy:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ../config/toxiproxy/${ORION_TOXIPROXY_CONFIG:-toxiproxy-linux.json}:/etc/toxiproxy/toxiproxy.json:ro
+
+  rca:
+    environment:
+      OLLAMA_URL: ${OLLAMA_RCA_URL:-http://ollama-svc:11434}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  orion-ollama:

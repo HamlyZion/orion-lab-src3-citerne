@@ -1,0 +1,51 @@
+target: all
+
+server:
+  http_listen_port: 3200
+  grpc_listen_port: 9095
+  log_level: warn
+
+usage_report:
+  reporting_enabled: false
+
+memory:
+  automemlimit_enabled: true
+  automemlimit_ratio: 0.8
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+
+live_store:
+  max_live_traces_bytes: 50000000
+  ring:
+    kvstore:
+      store: inmemory
+
+backend_worker:
+  ring:
+    kvstore:
+      store: inmemory
+  compaction:
+    block_retention: 24h
+
+storage:
+  trace:
+    backend: local
+    wal:
+      path: /var/tempo/wal
+    local:
+      path: /var/tempo/blocks
+    pool:
+      max_workers: 50
+
+overrides:
+  defaults:
+    ingestion:
+      rate_limit_bytes: 5000000
+      max_traces_per_user: 2000

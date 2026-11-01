@@ -1,0 +1,98 @@
+logging {
+  level  = "warn"
+  format = "logfmt"
+}
+
+// ============================================================================
+// 1. Découverte des conteneurs Docker et collecte des logs -> Loki
+// ============================================================================
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "containers" {
+  targets = discovery.docker.containers.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "compose_service"
+  }
+}
+
+loki.source.docker "containers" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.containers.output
+  forward_to = [loki.process.orion_logs.receiver]
+}
+
+loki.process "orion_logs" {
+  // # TODO(lab-2a): ajouter les étapes stage.replace pour masquer les données sensibles dans les logs
+
+  stage.json {
+    expressions = {
+      ts      = "ts",
+      service = "service",
+      msg     = "msg",
+      // # TODO(lab-2a): extraire les champs JSON nécessaires au tri et à la corrélation
+    }
+  }
+
+  stage.labels {
+    values = {
+      service = "",
+      // # TODO(lab-2a): sélectionner les labels à faible cardinalité (budget <= 1 000 flux actifs)
+    }
+  }
+
+  stage.structured_metadata {
+    values = {
+      // # TODO(lab-2a): attacher les champs à forte cardinalité (ex. trace_id) via stage.structured_metadata
+    }
+  }
+
+  forward_to = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
+
+// ============================================================================
+// 2. Réception des traces OTLP -> Tempo
+// ============================================================================
+otelcol.receiver.otlp "default" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+  output {
+    traces = [otelcol.processor.batch.default.input]
+  }
+}
+
+otelcol.processor.batch "default" {
+  timeout         = "2s"
+  send_batch_size = 512
+  output {
+    traces = [otelcol.exporter.otlp.tempo.input]
+  }
+}
+
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "tempo:4317"
+    tls {
+      insecure = true
+    }
+  }
+}

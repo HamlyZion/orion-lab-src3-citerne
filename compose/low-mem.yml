@@ -1,0 +1,40 @@
+services:
+  gateway:
+    mem_limit: 192m
+    environment:
+      ORION_OLLAMA_RATIO: "0"
+      ORION_LOW_MEM: "1"
+
+  rag:
+    mem_limit: 192m
+    environment:
+      ORION_LOW_MEM: "1"
+
+  worker:
+    mem_limit: 512m
+    environment:
+      ORION_LOW_MEM: "1"
+
+  postgres-db:
+    mem_limit: 384m
+
+  prometheus:
+    mem_limit: 384m
+
+  loki:
+    mem_limit: 384m
+    environment:
+      GOMEMLIMIT: 320MiB
+
+  tempo:
+    mem_limit: 384m
+    environment:
+      GOMEMLIMIT: 320MiB
+
+  tools:
+    environment:
+      ORION_LOW_MEM: "1"
+
+  k6:
+    mem_limit: 192m
+

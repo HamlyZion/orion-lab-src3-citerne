@@ -1,0 +1,12 @@
+// Extrait généré par un assistant pour masquer les données sensibles dans loki.process.
+// À auditer et rectifier avant de l'insérer dans config/alloy/config.alloy (Lab 2a — Étape 3).
+
+  stage.replace {
+    expression = "(\"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}\")"
+    replace    = "[EMAIL_MASQUE]"
+  }
+
+  stage.replace {
+    expression = "(sk-[0-9a-f]{32})"
+    replace    = "[CLE_API_MASQUEE]"
+  }
