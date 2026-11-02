@@ -43,13 +43,13 @@
 3. Inspectez la structure JSON des lignes produites par les différents services d'Orion et recensez les champs présents (`ts`, `level`, `service`, `msg`, `trace_id`, `span_id`, `team`, `version`, ainsi que les champs métiers propres à chaque service). Grafana Alloy collecte tous les conteneurs Docker de la pile (`container`, `compose_service`) ; seuls `rag`, `gateway`, `worker` et `llm-sim` écrivent du JSON avec le champ `service`.
 
    > Dans Explore, chaque ligne porte aussi deux étiquettes posées par Loki lui-même, pas par Alloy : `service_name` (copie de `service`, ou nom du conteneur pour les autres) et `detected_level` (le niveau que Loki devine dans la ligne). Elles n'ajoutent aucun flux : laissez-les de côté dans votre arbitrage.
-4. Sur une journée de trafic (`0,5` requête/s en moyenne sur `/ask`), estimez les cardinalités de `service`, `level`, `team`, `version` et `trace_id` (`ts` et `msg` sont exclus : une valeur par ligne). Calculez le produit des cardinalités de `service`, `level`, `team` et `version`, puis le même produit avec `trace_id` en plus si ces champs étaient promus en *labels* Loki.
+4. Pour chacun des champs `service`, `level`, `team`, `version` et `trace_id` (`ts` et `msg` sont exclus : une valeur par ligne), dites s'il ne prend que quelques valeurs, ou une valeur nouvelle à chaque requête. Lesquels pourraient devenir des *labels* Loki sans ouvrir un nouveau flux à chaque requête ?
 
    Pour lister les valeurs d'un champ vues depuis une heure, exécutez dans Explore (source **Loki**, éditeur en mode « Code ») :
    ```logql
    sum by (level) (count_over_time({service=~".+"} | json [5m]))
    ```
-   La légende sous le graphique nomme une courbe par valeur, même quand la courbe est trop basse pour se voir ; `{team=""}` désigne les lignes où le champ est vide. Remplacez `level` par `team` ou `version`. Une valeur rare peut ne pas apparaître en une heure : comptez aussi les valeurs possibles, pas seulement celles que vous voyez. Pour `trace_id`, partez du débit : chaque requête a le sien.
+   La légende sous le graphique nomme une courbe par valeur, même quand la courbe est trop basse pour se voir ; `{team=""}` désigne les lignes où le champ est vide. Remplacez `level` par `team` ou `version`. Une valeur rare peut ne pas apparaître en une heure : comptez aussi les valeurs possibles, pas seulement celles que vous voyez. Pour `trace_id`, comparez deux lignes successives.
 
 ### Étape 2 — Arbitrage labels vs métadonnées structurées sous budget (20 min)
 
