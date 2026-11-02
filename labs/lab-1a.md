@@ -2,7 +2,7 @@
 
 - **Durée** : 40 minutes (séance 1, 14 h 40 - 15 h 20)
 - **Séance** : 1 (L'observabilité d'un système IA en production)
-- **Code de session console** : `01-ANATOMIE-STACK`
+- **Console d'incident** : pas utilisée dans ce lab (première session au lab 1b)
 - **Prérequis** : `make check` exécuté avec succès à la racine du dépôt `orion-lab`
 - **Dépôt de travail** : votre dépôt de trinôme, créé une seule fois à la séance 1 (README, §1 : `git clone https://github.com/jassouline/orion-lab.git`, puis `upstream` et `origin`). Si ce n'est pas encore fait, commencez par ce §1. `make start-lab1a` remet l'état d'exécution à zéro sans toucher à vos fichiers.
 
