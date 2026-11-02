@@ -54,7 +54,7 @@
 ### Étape 2 — Arbitrage labels vs métadonnées structurées sous budget (20 min)
 
 1. Ouvrez `config/alloy/config.alloy` et complétez le bloc `stage.json` de `loki.process "orion_logs"` pour extraire les champs utiles au tri et à la corrélation.
-2. Choisissez quels champs à faible cardinalité doivent figurer dans `stage.labels` (pour le filtrage rapide de flux) et quels identifiants à forte cardinalité doivent être attachés dans `stage.structured_metadata` (notamment `trace_id` pour la corrélation avec Tempo).
+2. Choisissez quels champs à faible cardinalité doivent figurer dans `stage.labels` (pour le filtrage rapide de flux) et quels identifiants à forte cardinalité doivent être attachés dans `stage.structured_metadata` (notamment `trace_id`, pour suivre une requête d'un service à l'autre).
    - **Attention au piège de cardinalité** : si vous placez un identifiant unique par requête (`trace_id`, `span_id`, etc.) dans `stage.labels`, chaque requête ouvre un nouveau flux dans Loki. Un flux reste actif jusqu'à ce qu'il ne reçoive plus de ligne pendant la durée `chunk_idle_period` de `config/loki/loki.yaml`, soit 30 minutes dans Orion : le budget de 1 000 flux actifs fond à vue d'œil. Une fois le plafond atteint, Loki refuse tout nouveau flux en `HTTP 429` ; Alloy réessaie sans fin d'envoyer le même lot, et **plus aucune ligne d'aucun service n'arrive dans Loki**. Le message `maximum active stream limit exceeded...` se lit dans les journaux de Loki, pas dans ceux d'Alloy :
      ```bash
      docker compose -f compose/docker-compose.yml logs --since 5m loki | grep 429

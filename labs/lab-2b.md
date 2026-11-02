@@ -1,6 +1,6 @@
 # Lab 2b — LogQL avancé, fraîcheur d'indexation et détection d'échec silencieux
 
-- **Durée** : 57 minutes pour les étapes 1 à 4 ; l'étape 5 et le checkpoint peuvent se terminer chez vous
+- **Durée** : 64 minutes pour les étapes 1 à 4 ; l'étape 5 et le checkpoint peuvent se terminer chez vous
 - **Séance** : 4 (Exploitation des journaux et pannes silencieuses de pipelines de données)
 - **Code de session console** : `7CZXUBBZ66`
 - **Checkpoint évalué** : Checkpoint 2 (`make check-lab2b PIN=<code écrit au tableau> ETU=<votre_numero_etudiant>`)
@@ -55,8 +55,8 @@
      5. appliquez `quantile_over_time(0.95, ... [5m])` ;
      6. avec cette fonction, placez la clause `by (team)` **après** la parenthèse fermante.
 
-     Résultat attendu : une série par équipe (`support`, `rh`, `dev`), en millisecondes : de l'ordre de 1 000 à 2 000 sur un Mac ou en mode `LOW_MEM=1`, nettement plus si Ollama tourne sur le processeur.
-   - **À écrire** : le nombre total de passages indexés par le `worker` sur 10 minutes, à partir de son champ `docs_processed`. Même principe, avec `sum_over_time(... [10m])` à la place de `quantile_over_time`, et le tout entouré de `sum(...)` pour obtenir un seul total. Résultat attendu : quelques dizaines de passages. Vous reprendrez cette requête à l'étape 4.
+     Résultat attendu : une série par équipe (`support`, `rh`, `dev`), en millisecondes, de l'ordre de 1 000 à 2 000.
+   - **À écrire** : le nombre total de passages indexés par le `worker` sur 10 minutes, à partir de son champ `docs_processed`. Même principe, avec `sum_over_time(... [10m])` à la place de `quantile_over_time`, et le tout entouré de `sum(...)` pour obtenir un seul total. Résultat attendu : de quelques dizaines à une centaine de passages, selon le moment. Vous reprendrez cette requête à l'étape 4.
    - Affichez les lignes brutes du `worker` (`{service="worker"}`), dépliez-en une, et vérifiez votre réponse à Q2.
 
    > Tapez les requêtes dans l'éditeur en mode « Code », pas « Builder ». Un résultat vide (« No data ») n'est pas forcément une erreur : il peut simplement n'y avoir aucune ligne qui corresponde. Quand un champ JSON porte le même nom qu'un label (`service`, `team`), Loki l'affiche avec le suffixe `_extracted` : c'est normal.
@@ -111,8 +111,8 @@
      -w '%{stderr}HTTP %{http_code}\n' \
      -H "Authorization: Bearer ${ORION_KEY_SUPPORT}" \
      -H "Content-Type: application/json" \
-     -d "{\"question\": \"Quel est le délai de prise en charge d'une alerte critique par l'ingénieur d'astreinte N2 et quel poste téléphonique permet l'escalade ?\"}" \
-     https://127.0.0.1:8443/ask | python3 -m json.tool
+     -d "{\"question\": \"En combien de temps l'ingénieur d'astreinte N2 doit-il acquitter une alerte, et à quel poste interne escalader ?\"}" \
+     https://127.0.0.1:8443/ask | python3 -m json.tool --no-ensure-ascii
    ```
    Un code `429` signale le quota de l'équipe `support` : attendez la fenêtre suivante (5 min au plus) puis relancez la commande.
 2. Ouvrez la console étudiante sur `http://127.0.0.1:8088` et démarrez la session du lab 2b avec le code :
@@ -139,8 +139,8 @@
      -w '%{stderr}HTTP %{http_code}\n' \
      -H "Authorization: Bearer ${ORION_KEY_SUPPORT}" \
      -H "Content-Type: application/json" \
-     -d "{\"question\": \"Quel est le délai de prise en charge d'une alerte critique par l'ingénieur d'astreinte N2 et quel poste téléphonique permet l'escalade ?\"}" \
-     https://127.0.0.1:8443/ask | python3 -m json.tool
+     -d "{\"question\": \"En combien de temps l'ingénieur d'astreinte N2 doit-il acquitter une alerte, et à quel poste interne escalader ?\"}" \
+     https://127.0.0.1:8443/ask | python3 -m json.tool --no-ensure-ascii
    ```
    Un code `429` signale le quota de l'équipe `support` : attendez la fenêtre suivante (5 min au plus) puis relancez la commande.
 2. Observez l'état de votre alerte `OrionWorkerFraicheurIndexationTicket` dans Prometheus (`http://127.0.0.1:9090/alerts`) et l'évolution des métriques du `worker` (vos requêtes de l'étape 2). L'alerte `OrionSLOQualiteTicket` s'allume également : c'est la sonde de qualité décrite à l'étape 3.
@@ -168,7 +168,7 @@
 3. Partie 4 : choisissez la catégorie de levier et la cible qui corrigent la cause (Q8), puis cliquez sur **Exécuter le levier**.
 4. Attendez un cycle du `worker`, environ une minute, puis vérifiez votre réponse à Q9 :
    - relancez la commande `/ask` de l'étape 4.1 : Orion doit maintenant citer la version 2.0 (15 minutes, poste 4800) ;
-   - sur `http://127.0.0.1:9090/alerts`, votre alerte `OrionWorkerFraicheurIndexationTicket` doit être revenue à `Inactive`.
+   - sur `http://127.0.0.1:9090/alerts`, votre alerte `OrionWorkerFraicheurIndexationTicket` doit être revenue à `Inactive`. L'alerte `OrionSLOQualiteTicket`, elle, reste allumée plusieurs minutes de plus : elle compte les mauvaises réponses sur une fenêtre de 15 minutes, qui doit d'abord se vider.
 
    Si rien ne change, le levier choisi ne corrigeait pas la cause : relisez votre diagnostic et essayez-en un autre.
 5. Lancez le checkpoint (voir « Vérifier votre réussite ») si ce n'est pas déjà fait, puis cliquez sur **Clôturer l'incident et générer l'archive** (partie 6). La clôture remet Orion dans son état de départ : `DOC-SUP-003` repasse en version 1.4. C'est normal, la session simulait la publication.
