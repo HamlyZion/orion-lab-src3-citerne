@@ -71,18 +71,16 @@
    1. Tapez `worker_` dans le champ d'expression : l'autocomplétion liste les métriques exposées par le `worker`, que décrit aussi `docs/architecture.md` (§ 1, étape 4 « Indexation périodique »). Exécutez-les une par une (**Execute**).
    2. Repérez celle qui donne l'heure du dernier cycle réussi : sa valeur est un horodatage Unix, en secondes.
    3. Transformez cet horodatage en âge du dernier succès, en secondes, avec `time()`. Affichez la courbe dans l'onglet **Graph**, sur 15 minutes.
-   4. Lisez sur la courbe la période entre deux cycles réussis et l'âge maximal atteint en marche normale.
-   5. Relevez dans `config/prometheus/prometheus.yml` l'intervalle de collecte (`scrape_interval`) et l'intervalle d'évaluation des règles (`evaluation_interval`) : chacun retarde l'alerte d'autant.
+   4. Lisez sur la courbe la période entre deux cycles réussis et le plus haut sommet atteint en marche normale.
 2. Dans `config/prometheus/rules.yml`, au niveau du marqueur `# TODO(lab-2b)`, écrivez une règle d'alerte répondant à l'objectif suivant :
    - **Objectif** : être alerté lorsque l'indexation documentaire du `worker` ne progresse plus.
-   - **Cible** : en cas de blocage, l'alerte passe à `FIRING` **moins de 4 minutes** après le dernier cycle réussi, et ne se déclenche jamais en marche normale.
+   - **Cible** : en cas de blocage, l'alerte passe à `FIRING` en quelques minutes (moins de 4), et ne se déclenche jamais en marche normale. Repère : un seuil nettement au-dessus du plus haut sommet, environ deux fois ce sommet, et une courte durée de confirmation `for`.
    - **Nom imposé de l'alerte** (requis par le checkpoint) : `OrionWorkerFraicheurIndexationTicket`.
    - **Labels requis par le checkpoint** : `severity: ticket` et `service: orion-worker`.
    - **Justification attendue**, en commentaire YAML (`# ...`) juste au-dessus de la règle :
-     - la période et l'âge maximal mesurés ;
-     - le nombre de cycles manqués que votre seuil tolère ;
-     - votre durée de confirmation `for` ;
-     - le calcul du pire délai (seuil + `for` + collecte + évaluation) comparé à la cible.
+     - la période et le plus haut sommet lus sur la courbe ;
+     - le seuil choisi ;
+     - la durée de confirmation `for` choisie.
 3. Vérifiez la syntaxe avec `promtool check rules` et rechargez Prometheus :
    ```bash
    docker compose -f compose/docker-compose.yml exec -T prometheus \
@@ -134,7 +132,7 @@
 > - **Q6.** Une recherche des lignes de niveau `ERROR` du `worker` suffit-elle à détecter toutes les pannes d'indexation ? Dans quel cas ne verrait-elle rien ?
 > - **Q7.** Si la version 2.0 n'est pas servie, quelles métriques du `worker` vont changer de comportement, et comment ?
 
-1. Patientez le pire délai calculé à l'étape 2 (4 minutes au plus si votre règle tient la cible). Interrogez ensuite à nouveau `https://127.0.0.1:8443/ask` avec la même commande pour vérifier si Orion sert la version 2.0 de `DOC-SUP-003` (15 minutes, poste 4800) :
+1. Patientez environ 4 minutes. Interrogez ensuite à nouveau `https://127.0.0.1:8443/ask` avec la même commande pour vérifier si Orion sert la version 2.0 de `DOC-SUP-003` (15 minutes, poste 4800) :
    ```bash
    set -a && . ./.env && set +a
    curl --cacert config/traefik/certs/ca.crt -sS \
