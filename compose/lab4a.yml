@@ -1,6 +1,6 @@
 services:
   prom-seed:
-    image: ${ORION_TOOLS_IMAGE:-ghcr.io/jassouline/orion-tools:sha-aafd849}
+    image: ${ORION_TOOLS_IMAGE:-ghcr.io/jassouline/orion-tools:sha-7fcffb6}
     user: "65534:65534"
     restart: "no"
     command: ["prom-seed", "--output-dir=/prometheus"]

@@ -385,7 +385,7 @@ services:
       - traefik
 
   tools:
-    image: ${ORION_TOOLS_IMAGE:-ghcr.io/jassouline/orion-tools:sha-aafd849}
+    image: ${ORION_TOOLS_IMAGE:-ghcr.io/jassouline/orion-tools:sha-7fcffb6}
     restart: unless-stopped
     mem_limit: 192m
     environment:
@@ -411,7 +411,7 @@ services:
       - chaos-net
 
   rca:
-    image: ${ORION_TOOLS_IMAGE:-ghcr.io/jassouline/orion-tools:sha-aafd849}
+    image: ${ORION_TOOLS_IMAGE:-ghcr.io/jassouline/orion-tools:sha-7fcffb6}
     profiles:
       - rca
     mem_limit: 256m
