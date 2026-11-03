@@ -42,7 +42,10 @@ check-lab1b check-lab2b check-lab3 check-lab4b:
 		echo "Erreur : précisez PIN=... et ETU=... (ex. make $@ PIN=ABCD ETU=20260001)" >&2; \
 		exit 1; \
 	fi
-	@docker compose --env-file .env -f compose/docker-compose.yml exec -T tools orion-tools check "$(subst check-,,$@)" --pin "$(PIN)" --etu "$(ETU)"
+	@docker compose --env-file .env -f compose/docker-compose.yml exec -T tools orion-tools check "$(subst check-,,$@)" --pin "$(PIN)" --etu "$(ETU)" && \
+		echo "" && \
+		echo "Ajoutez ce jeton sur sa propre ligne à la fin de jetons/ckn.txt, puis poussez-le (README, § 6) :" && \
+		echo "  git add jetons/ckn.txt && git commit -m \"Validation $(subst check-,,$@)\" && git push"
 
 rca:
 	@if [ -f .env ]; then set -a; . ./.env; set +a; fi; \
