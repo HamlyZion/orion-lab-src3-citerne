@@ -32,32 +32,17 @@
 > git checkout upstream/main -- config/prometheus/rules.yml
 > ```
 
-## Encadré de référence — Burn rate en laboratoire
+## Encadré de référence — Les valeurs de l'alerte burn rate
 
-Dans l'industrie (Google SRE Workbook, ch. 5), une alerte de *page* combine souvent des fenêtres de **1 h et 5 min** avec un facteur de burn rate de **14,4** sur un budget de 30 jours : à ce rythme, 2 % du budget mensuel sont consommés en 1 heure et le budget entier est épuisé en 50 heures.
-
-Dans un lab de 1 h 50, une fenêtre d'une heure ne permettrait pas d'observer un cycle complet de déclenchement et de retour au calme. Nous conservons donc **exactement la même formule et le même facteur (14,4)**, sur un horizon ramené de 30 jours à **6,7 heures** (division par 7,5), en gardant le ratio long/court de 12 : 1 :
-
-| Paramètre | Référence (30 jours) | Lab Orion |
+| Ce que vous écrivez | Valeur | À quoi ça sert |
 |---|---|---|
-| SLO de disponibilité (hors `HTTP 429`) | $99{,}5\,\%$ | $99{,}5\,\%$ |
-| Budget d'erreur $(1 - \text{SLO})$ | $0{,}005$ ($0{,}5\,\%$) | $0{,}005$ ($0{,}5\,\%$) |
-| Facteur de burn rate rapide (*page*) | $14{,}4$ | $14{,}4$ |
-| Seuil de taux d'erreur : $\text{facteur} \times (1 - \text{SLO})$ | $14{,}4 \times 0{,}005 = 0{,}072$ ($7{,}2\,\%$) | $14{,}4 \times 0{,}005 = 0{,}072$ ($7{,}2\,\%$) |
-| Fenêtre longue | $1\text{ h}$ | $8\text{ min}$ (`8m`) |
-| Fenêtre courte (ratio 12 : 1) | $5\text{ min}$ | $40\text{ s}$ (`40s`) |
-| Garde de volume sur la fenêtre courte | — | $\ge 10\text{ requêtes}$ hors `429` sur `40s` |
-| Maintien après retour au calme | — | `keep_firing_for: 2m` (sans clause `for:`) |
-| Pas de *scrape* et d'évaluation | — | $10\text{ s}$ |
+| Seuil d'erreur | `14.4 * 0.005`, soit 7,2 % | 14,4 : la valeur que Google recommande pour réveiller l'astreinte. 0,005 : le budget d'erreur de 0,5 % (SLO de disponibilité de 99,5 %, hors `HTTP 429`). |
+| Fenêtre longue | `8m` | Est-ce que ça dure ? Un pic de quelques secondes ne suffit pas à faire sonner l'alerte. |
+| Fenêtre courte | `40s` | Est-ce que ça dure encore ? Dès la réparation, l'alerte se calme vite, sans attendre que les 8 minutes se vident. |
+| Garde de volume | au moins `10` requêtes hors `429` sur `40s` | Pas d'alerte pour une seule erreur quand le trafic est faible. |
+| Maintien | `keep_firing_for: 2m`, sans clause `for:` | L'alerte reste allumée 2 minutes après la réparation, pour ne pas clignoter. Une clause `for:` retarderait inutilement son déclenchement. |
 
-### Calculs préalables à faire à la main
-
-Avant d'éditer `rules.yml`, calculez sur papier (sans aide extérieure) :
-
-1. Avec une fenêtre longue de $8\text{ min}$, une fenêtre courte de $40\text{ s}$, un seuil $\theta = 14{,}4 \times 0{,}005$ et aucune clause `for:`, au bout de combien de secondes d'une panne franche à **100 % d'erreurs `5xx`** (après une période nominale à 0 % d'erreur) chacune des deux fenêtres dépasse-t-elle $\theta$ ? Laquelle des deux fenêtres gouverne le déclenchement ?
-2. Même question lorsque le taux d'erreur injecté vaut **20 %** au lieu de 100 %.
-3. En tenant compte du pas de *scrape* et d'évaluation de $10\text{ s}$, quel intervalle de temps sépare le début de la panne de l'apparition de l'alerte à l'état `firing` dans les deux cas ?
-4. Pourquoi l'ajout d'une clause `for: 2m` retarderait-il inutilement la détection, alors que `keep_firing_for: 2m` évite le *flapping* à la sortie de panne sans pénaliser le déclenchement ?
+En production, Google utilise des fenêtres de 1 h et 5 min. Nous les raccourcissons à 8 min et 40 s pour voir l'alerte sonner et s'éteindre pendant le lab.
 
 ## Étapes à réaliser
 
@@ -106,7 +91,7 @@ Complétez le troisième marqueur `# TODO(lab-1b)` dans `config/prometheus/rules
 2. En binôme, identifiez par écrit toutes les erreurs de conception et de syntaxe PromQL présentes dans ce fichier (agrégation d'histogramme classique, choix des fenêtres, seuils par backend, garde de volume, clause `for:`).
 3. Comparez cet artefact à la règle de référence `OrionSLOLatencePage` déjà présente dans `config/prometheus/rules.yml`.
 
-### Étape 5 — Première prédiction et injection annoncée (15 min)
+### Étape 5 — Prédiction et injection annoncée (15 min)
 
 > **Changement annoncé** — ticket de l'équipe plateforme, appliqué à l'ouverture de la session `56UABWUT55` : pour libérer de la mémoire, la passerelle ne conserve plus le modèle de génération chargé entre deux requêtes ; il est rechargé à chaque appel. Aucun autre composant ne change. Avant de regarder Grafana, prédisez quels signaux et quelles alertes vont réagir, dans quel sens et au bout de combien de temps.
 
@@ -154,28 +139,22 @@ Pour le déroulé général d'une session dans la console d'incident (`http://12
      - **L'archive `.tar.gz` et la chronologie `timeline.md` ne sont pas à remettre au lab** : c'est uniquement l'entraînement pour le Game Day de la séance 6.
      - **L'injection générique de l'étape 6 est située en partie 2 et ne dépend pas de l'ouverture ou de la clôture de la session** : vous pouvez aussi bien clôturer l'incident à la fin de l'étape 5 que garder la session ouverte pendant l'étape 6. *(Si le sous-panneau d'injection générique n'est pas visible en bas de la partie 2, lancez `make start-lab1b` dans votre terminal et rafraîchissez la page `http://127.0.0.1:8088`.)*
 
-### Étape 6 — Deuxième prédiction : injection d'erreurs et mesure du délai (10 min + ~10 min d'attente intercalée)
+### Étape 6 — Observer l'alerte pendant une injection d'erreurs (10 min)
 
-1. **Où déclencher l'injection générique** : dans la console (`http://127.0.0.1:8088`), allez en bas de la **partie `2. Prédiction avant observation (Séance de Lab)`**, dans l'encadré **`Injection générique d'erreurs HTTP 500 (Lab 1b)`** (qui propose `20` % et `240` s par défaut, avec une durée réglable de `10` à `600` s ; l'injection s'arrête seule au terme de la durée ou immédiatement avec le bouton **`Rétablir (0 %)`**).
-2. **Avant de cliquer, notez vos prédictions de délai** (fondées sur vos calculs manuels de l'encadré) pour le passage à l'état `firing` de `OrionSLODisponibiliteBurnRatePage` :
-   - pour un taux d'erreur de **100 %** (**`34,56 s`** théoriques) ;
-   - pour un taux d'erreur de **20 %** (**`172,8 s` (`2 min 53 s`)** théoriques).
-3. **Méthode de chronométrage (horloges en UTC dans la console et dans Prometheus)** :
-   - $T_0$ = l'heure UTC de déclenchement inscrite dans le journal **`Chronologie de la session (timeline.md)`** en bas de la console (`http://127.0.0.1:8088`), sur la ligne **`Injection générique d'erreurs (lab 1b)`** ;
-   - $T_1$ = l'heure UTC du passage à l'état **`FIRING`** de `OrionSLODisponibiliteBurnRatePage` sur `http://127.0.0.1:9090/alerts`, lue dans la colonne **`Active Since`** en dépliant la règle (vérifiez également que l'alerte apparaît dans Alertmanager sur `http://127.0.0.1:9093`) ;
-   - $\text{Délai} = T_1 - T_0$, à comparer à vos calculs.
-4. **Mesure 1 — `100 %` d'erreurs pendant `120 s` (`Mitigator` + `Investigator`)** :
-   - Dans **`Injection générique d'erreurs HTTP 500 (Lab 1b)`** (partie 2), réglez **`Taux d'erreurs (%)`** sur `100` et **`Durée (s)`** sur `120`, puis cliquez sur **`Injecter les erreurs`**.
-   - Relevez $T_0$ dans `timeline.md`, puis $T_1$ (colonne **`Active Since`** sur `http://127.0.0.1:9090/alerts`) dès que `OrionSLODisponibiliteBurnRatePage` passe à **`FIRING`**, et calculez $T_1 - T_0$.
-5. **Attente obligatoire d'environ 10 minutes entre les deux mesures (vidage de la fenêtre de 8 min)** :
-   - Au bout des `120 s`, l'injection s'arrête seule. La fenêtre courte `job:traefik_errors:ratio_rate40s` repasse sous `0,072` vers **$T_0 + 2\text{ min }40\text{ s}$** et l'alerte repasse à l'état `inactive` vers **$T_0 + 4\text{ min }40\text{ s}$** (après `keep_firing_for: 2m`).
-   - **Attention : n'enchaînez pas tout de suite la mesure à 20 % !** La fenêtre longue de `8 min` (`job:traefik_errors:ratio_rate8m`) garde les `120 s` d'erreurs en mémoire : elle reste au-dessus du seuil `0,072` jusqu'à environ **$T_0 + 9\text{ min }25\text{ s}$** et ne retombe à **`0`** qu'à environ **$T_0 + 10\text{ min}$** (`8 minutes` après la fin des `120 s` d'injection). Lancer l'essai à `20 %` avant ce retour à `0` déclencherait l'alerte en ~20 à 35 secondes.
-   - **Comment occuper ces ~10 minutes d'attente** : réalisez ou finalisez l'**étape 4** (audit de `labs/artefacts/lab-1b-slo-latence-ia.yml`) et la saisie de la cause racine en partie 6 pendant que `job:traefik_errors:ratio_rate8m` décroît. Avant de lancer la seconde mesure, vérifiez sur `http://127.0.0.1:9090/query` que `job:traefik_errors:ratio_rate8m` vaut bien **`0`**.
-6. **Mesure 2 — `20 %` d'erreurs pendant `300 s`, puis rétablissement (`Mitigator` + `Investigator`)** :
-   - Une fois `job:traefik_errors:ratio_rate8m` revenu à `0`, réglez **`Taux d'erreurs (%)`** sur `20` et **`Durée (s)`** sur `300`, puis cliquez sur **`Injecter les erreurs`**.
-   - Relevez $T_0$ dans `timeline.md`, puis $T_1$ (colonne **`Active Since`** sur `http://127.0.0.1:9090/alerts`) au passage en **`FIRING`**, et calculez $T_1 - T_0$.
-   - Dès que la mesure est notée, cliquez sur **`Rétablir (0 %)`** en partie 2 pour arrêter l'injection.
-   - **Avant de lancer `make check-lab1b`** : assurez-vous qu'**aucune injection n'est active** (`Rétablir (0 %)` cliqué), car `make check-lab1b` déclenche lui-même sa propre injection d'erreurs pour vérifier votre alerte.
+1. **Où déclencher l'injection** : dans la console (`http://127.0.0.1:8088`), en bas de la **partie `2. Prédiction avant observation (Séance de Lab)`**, dans l'encadré **`Injection générique d'erreurs HTTP 500 (Lab 1b)`**. L'injection s'arrête seule au terme de la durée choisie, ou immédiatement avec le bouton **`Rétablir (0 %)`**.
+2. **Préparer l'observation** :
+   - dans Prometheus (`http://127.0.0.1:9090/query`, onglet Graph), affichez les deux fenêtres sur un même graphique :
+     ```promql
+     {__name__=~"job:traefik_errors:ratio_rate.*"}
+     ```
+     Les courbes apparaissent avec les premières erreurs. Le seuil de l'alerte vaut `0.072` sur l'axe vertical.
+   - ouvrez dans un autre onglet `http://127.0.0.1:9090/alerts`.
+3. **Injecter (`Mitigator`)** : réglez **`Taux d'erreurs (%)`** sur `100` et **`Durée (s)`** sur `120`, puis cliquez sur **`Injecter les erreurs`**.
+4. **Observer pendant environ 5 minutes (`Investigator` + `IC`)** : rafraîchissez le graphique et la page des alertes, et notez dans les notes du trinôme :
+   - laquelle des deux courbes monte en premier ;
+   - au bout de combien de temps environ `OrionSLODisponibiliteBurnRatePage` passe à l'état **`FIRING`** (vérifiez aussi qu'elle apparaît dans Alertmanager, `http://127.0.0.1:9093`) ;
+   - après la fin de l'injection, laquelle des deux courbes redescend en premier, et quand l'alerte redevient `inactive`.
+5. **Avant de lancer `make check-lab1b`** : assurez-vous qu'aucune injection n'est active (bouton **`Rétablir (0 %)`**), car `make check-lab1b` déclenche lui-même sa propre injection d'erreurs pour vérifier votre alerte.
 
 ## Vérifier votre réussite (Checkpoint 1)
 
