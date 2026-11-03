@@ -8,14 +8,20 @@ groups:
       # TODO(lab-1b): calculer le ratio d'erreurs 5xx (hors 429) du service rag@file sur une fenêtre de 8m
       - record: job:traefik_errors:ratio_rate8m
         expr: |
-          sum(rate(traefik_service_requests_total{service="rag@file", code="5.."}[8m]))
+          (
+            sum(rate(traefik_service_requests_total{service="rag@file", code=~"5.."}[8m]))
+            or vector(0)
+          )
           /
-          sum(rate(traefik_service_requests_total{service="rag@file", code!="429"}[8m]))
+          sum(rate(traefik_service_requests_total{service="rag@file", code!="429"}[8m])) 
 
       # TODO(lab-1b): calculer le ratio d'erreurs 5xx (hors 429) du service rag@file sur une fenêtre de 40s
       - record: job:traefik_errors:ratio_rate40s
         expr: |
-          sum(rate(traefik_service_requests_total{service="rag@file", code="5.."}[40s]))
+          (
+            sum(rate(traefik_service_requests_total{service="rag@file", code=~"5.."}[40s]))
+            or vector(0)
+          )
           /
           sum(rate(traefik_service_requests_total{service="rag@file", code!="429"}[40s]))
 
@@ -46,16 +52,12 @@ groups:
       # garde de volume >= 10 requêtes hors 429 sur 40s, keep_firing_for: 2m, sans clause for:)
       - alert: OrionSLODisponibiliteBurnRatePage
         expr: |
-          (
-              job:traefik_errors:ratio_rate8m > (14.4 * 0.005)
-              and
-              job:traefik_errors:ratio_rate40s > (14.4 * 0.005)
-          )
+          job:traefik_errors:ratio_rate8m > (14.4 * 0.005)
           and
-          (
-              sum(increase(traefik_service_requests_total{service="rag@file", code!=429}[40s])) >= 10
-          )
-        keep_firing_for: 2m
+          job:traefik_errors:ratio_rate40s > (14.4 * 0.005)
+          and
+          sum(increase(traefik_service_requests_total{service="rag@file", code!="429"}[40s])) >= 10
+        keep_firing_for: 2m 
         labels:
           severity: page
           slo: availability
