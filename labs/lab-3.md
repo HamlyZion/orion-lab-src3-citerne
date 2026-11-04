@@ -1,6 +1,6 @@
 # Lab 3 — Tracing distribué OpenTelemetry, conventions GenAI et corrélation des trois signaux
 
-- **Durée** : 90 minutes
+- **Durée** : 62 minutes en séance (17, 20, 10 et 15 minutes pour les étapes 1 à 4)
 - **Séance** : 5 (Tracing distribué, conventions sémantiques GenAI et corrélation)
 - **Code de session console** : `PX5KG49K8T`
 - **Checkpoint évalué** : Checkpoint 3 (`make check-lab3 PIN=<votre_pin> ETU=<votre_numero_etudiant>`)
@@ -30,9 +30,16 @@
 > git checkout upstream/main -- <chemin/du/fichier>
 > ```
 
+> **Questions** : chaque étape commence par des questions à préparer **avant** de manipuler. Notez vos réponses dans les notes de votre trinôme, puis vérifiez-les pendant l'étape (non relevées ; elles servent au débrief).
+
 ## Étapes à réaliser
 
-### Étape 1 — Auto-instrumentation et contexte W3C sur `rag` et `worker` (25 min)
+### Étape 1 — Auto-instrumentation et contexte W3C sur `rag` et `worker` (17 min)
+
+> **Questions avant de manipuler**
+> - **Q1.** Au départ, seuls `traefik` et `gateway` produisent des spans. À quoi ressemblera la trace d'une requête `/ask`, et qu'y manquera-t-il ?
+> - **Q2.** Comment `opentelemetry-instrument` peut-il produire des spans pour `rag` sans que l'on modifie son code ?
+> - **Q3.** À quoi servent les attributs de ressource `service.version` et `deployment.environment`, et en quoi diffèrent-ils d'un attribut posé sur un seul span ?
 
 1. Démarrez l'état d'exécution du lab 3 :
    ```bash
@@ -40,7 +47,7 @@
    ```
 2. Dans Grafana Explore (`http://127.0.0.1:3000/explore`, source **Tempo**), observez les traces existantes :
    - choisissez l'onglet **Search** (sous *Query type*), laissez les filtres vides, puis cliquez sur **Run query** (bouton bleu en haut à droite) ;
-   - dans la liste, les traces `POST` de `traefik` (de l'ordre d'une seconde) sont les requêtes `/ask` du générateur de trafic ; les `GET` d'une milliseconde sont les sondes de santé ;
+   - dans la liste, les traces `POST` de `traefik` (de l'ordre d'une seconde) sont les requêtes `/ask` du générateur de trafic ; les `GET` d'une milliseconde sont les sondes de santé ; les traces `GET /metrics` de `gateway` viennent de Prometheus, qui collecte ses métriques ;
    - cliquez sur l'identifiant d'une trace `POST` : l'arbre des spans s'ouvre à droite.
 
    Constatez que seuls `traefik` et `gateway` apparaissent pour l'instant : les spans de `gateway` sont rattachés directement à Traefik, sans aucun span de `rag` entre les deux.
@@ -66,16 +73,21 @@
      -H "Authorization: Bearer ${ORION_KEY_SUPPORT}" \
      -H "Content-Type: application/json" \
      -d '{"question": "Quel port UDP et quelle adresse de passerelle sont utilisés par le concentrateur VPN WireGuard de Lyon ?"}' \
-     https://127.0.0.1:8443/ask | python3 -m json.tool
+     https://127.0.0.1:8443/ask | python3 -m json.tool --no-ensure-ascii
    ```
    Un code `429` signale le quota de l'équipe `support` : attendez la fenêtre suivante (5 min au plus) puis relancez la commande.
    Relevez la valeur du champ `"trace_id"`, à la fin de l'objet JSON retourné par `/ask` (après `"answer"` et `"sources"`), puis inspectez cette trace dans Grafana Explore (`http://127.0.0.1:3000/explore`, source **Tempo**) : onglet **TraceQL**, collez l'identifiant seul dans le champ de requête, puis **Run query**. L'arbre peut mettre plusieurs secondes à s'afficher. Les spans de `rag` arrivent dans Tempo 5 à 10 s après la requête ; si la trace paraît incomplète, attendez quelques secondes et relancez **Run query** :
    - dans Tempo, `rag` apparaît sous le nom de service `orion-rag`, `gateway` sous `gateway`, `worker` sous `worker` (et `traefik` sous `traefik`) ;
    - vérifiez la continuité de l'arbre de spans de `traefik` à `orion-rag`, de `orion-rag` à `gateway` (`POST /v1/embeddings` et `POST /v1/chat/completions`) et jusqu'aux requêtes SQL vers PostgreSQL ;
    - vérifiez la présence des attributs de ressource `service.name` et `service.version`, ainsi que `deployment.environment` (qui n'est posé que sur `rag` / `orion-rag` et `worker`) : cliquez sur un span de `orion-rag`, puis dépliez la section **Resource attributes** ;
-   - pour le `worker`, revenez à l'onglet **Search**, choisissez `worker` dans **Service Name**, puis **Run query** : une trace `worker.index_cycle` arrive environ une fois par minute.
+   - pour le `worker`, revenez à l'onglet **Search**, choisissez `worker` dans **Service Name**, puis **Run query** : une trace `worker.index_cycle` arrive environ une fois par minute. Le `worker` produit aussi des traces SQL courtes (`SELECT`, `CREATE`) : ignorez-les.
 
-### Étape 2 — Span métier RAG et conventions sémantiques `gen_ai.*` (30 min)
+### Étape 2 — Span métier RAG et conventions sémantiques `gen_ai.*` (20 min)
+
+> **Questions avant de manipuler**
+> - **Q4.** Que voit l'auto-instrumentation de la recherche de passages, et que ne sait-elle pas en dire ?
+> - **Q5.** Une fois votre span `rag.retrieval` ouvert, la requête SQL de la recherche deviendra son enfant dans la trace. Pourquoi ?
+> - **Q6.** Pourquoi utiliser des noms imposés comme `gen_ai.request.model`, plutôt que des noms choisis par chaque équipe ?
 
 1. Ouvrez `span-metier/span_metier.py`. Ce module est appelé par `rag` à chaque requête `/ask` sous la forme :
    ```python
@@ -115,13 +127,18 @@
      -H "Authorization: Bearer ${ORION_KEY_SUPPORT}" \
      -H "Content-Type: application/json" \
      -d '{"question": "Quel port UDP et quelle adresse de passerelle sont utilisés par le concentrateur VPN WireGuard de Lyon ?"}' \
-     https://127.0.0.1:8443/ask | python3 -m json.tool
+     https://127.0.0.1:8443/ask | python3 -m json.tool --no-ensure-ascii
    ```
    Relevez la valeur du champ `"trace_id"` à la fin de l'objet JSON de la réponse et inspectez la trace correspondante dans Tempo (`http://127.0.0.1:3000/explore`, onglet **TraceQL**, identifiant collé seul, puis **Run query**). Les spans de `rag` arrivent dans Tempo 5 à 10 s après la requête ; si la trace paraît incomplète, attendez quelques secondes et relancez **Run query** :
    - vérifiez que le span `rag.retrieval` (sous `orion-rag`) apparaît bien autour de la requête SQL vers PostgreSQL, avec les attributs `rag.top_k`, `rag.docs_found`, `rag.top_distance`, `orion.team`, `gen_ai.operation.name`, `gen_ai.provider.name` et `gen_ai.request.model` (notez sa durée en régime nominal) ;
    - inspectez également le span `inference` émis par `gateway` dans la même trace et repérez les attributs `gen_ai.operation.name`, `gen_ai.provider.name`, `gen_ai.request.model`, `gen_ai.usage.input_tokens` et `gen_ai.usage.output_tokens`.
 
-### Étape 3 — Corrélation Prometheus <-> Tempo <-> Loki (15 min)
+### Étape 3 — Corrélation Prometheus <-> Tempo <-> Loki (10 min)
+
+> **Questions avant de manipuler**
+> - **Q7.** Qu'est-ce qu'un *exemplar* sur une courbe Prometheus, et que permet-il de faire ?
+> - **Q8.** Sur quel identifiant reposent les liens entre une métrique, une trace et des lignes de log ?
+> - **Q9.** Pourquoi le passage de Tempo vers Loki dépend-il de votre travail du lab 2a ?
 
 1. Dans Grafana Explore (`http://127.0.0.1:3000/explore`), sélectionnez la source de données **Prometheus** et exécutez la requête :
    ```promql
@@ -132,14 +149,17 @@
    > Ce lien lance `{service=~".+"} | trace_id="<trace_id>"` : il suppose votre pipeline Alloy du lab 2a (label `service`, `trace_id` en métadonnée structurée). Si Loki ne renvoie aucune ligne, vérifiez `config/alloy/config.alloy` ; en attendant, cherchez le texte de l'identifiant avec `{service=~".+"} |= "<trace_id>"`.
 3. Inversement, depuis une ligne de log dans **Loki**, utilisez le lien dérivé **Voir la trace dans Tempo** pour revenir à l'arbre de spans.
 
-### Étape 4 — Prédiction et diagnostic d'une dégradation par les traces (20 min)
+### Étape 4 — Prédiction et diagnostic d'une dégradation par les traces (15 min)
+
+> **Question avant de manipuler**
+> - **Q10.** Quand une requête ralentit, pourquoi ne suffit-il pas de chercher le span le plus long de sa trace ? À quoi faut-il la comparer ?
 
 1. Ouvrez la console étudiante sur `http://127.0.0.1:8088`. Dans la partie **1. Code de session et rôles d'équipe**, saisissez le code :
    ```text
    PX5KG49K8T
    ```
    ainsi que les prénoms des trois rôles obligatoires (**IC**, **Mitigator**, **Investigator** — seul, saisissez votre prénom dans les trois rôles) **avant** de cliquer sur **« Ouvrir la session »**.
-2. L'ouverture de la session déclenche immédiatement la dégradation de performance ; il n'y a pas d'autre bouton. Juste après l'ouverture, avant d'interroger Orion ou d'ouvrir Grafana, enregistrez votre prédiction dans la partie 2 : comment distinguerez-vous dans une trace distribuée un ralentissement provenant de la génération LLM (`gateway` / backend LLM) d'un ralentissement provenant d'une autre étape du pipeline RAG ? Écrivez votre réponse dans le champ **Hypothèse et comportement attendu du SLI**, et dans **Requête ou métrique surveillée** le span ou la requête (TraceQL ou PromQL) que vous comptez regarder, puis cliquez sur **Enregistrer la prédiction**.
+2. L'ouverture de la session déclenche immédiatement la dégradation de performance ; il n'y a pas d'autre bouton. Juste après l'ouverture, avant d'interroger Orion ou d'ouvrir Grafana, enregistrez votre prédiction dans la partie 2 : comment distinguerez-vous dans une trace distribuée un ralentissement provenant de la génération LLM (`gateway` / backend LLM) d'un ralentissement provenant d'une autre étape du pipeline RAG ? Écrivez votre réponse dans le champ **Hypothèse et comportement attendu du SLI**, et dans **Requête ou métrique surveillée** le span ou la requête (TraceQL ou PromQL) que vous comptez regarder, puis cliquez sur **Enregistrer la prédiction**. Une requête TraceQL décrit entre accolades les spans recherchés, par exemple `{ name = "<nom du span>" && duration > 100ms }`.
 3. Une fois l'injection active, envoyez une requête sur `https://127.0.0.1:8443/ask` :
    ```bash
    set -a && . ./.env && set +a
@@ -148,7 +168,7 @@
      -H "Authorization: Bearer ${ORION_KEY_SUPPORT}" \
      -H "Content-Type: application/json" \
      -d '{"question": "Quel port UDP et quelle adresse de passerelle sont utilisés par le concentrateur VPN WireGuard de Lyon ?"}' \
-     https://127.0.0.1:8443/ask | python3 -m json.tool
+     https://127.0.0.1:8443/ask | python3 -m json.tool --no-ensure-ascii
    ```
    Relevez la valeur du champ `"trace_id"` à la racine de la réponse JSON, ouvrez cette trace dans Tempo (`http://127.0.0.1:3000/explore`) et comparez votre prédiction aux durées observées sur chaque span :
    - même sous l'incident, la génération LLM reste plus longue que la recherche documentaire : identifiez quel span (et sur quel service) voit sa durée multipliée par rapport à la trace de l'étape 2.3 ;
