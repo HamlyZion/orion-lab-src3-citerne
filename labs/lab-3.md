@@ -1,6 +1,6 @@
 # Lab 3 — Tracing distribué OpenTelemetry, conventions GenAI et corrélation des trois signaux
 
-- **Durée** : 62 minutes en séance (17, 20, 10 et 15 minutes pour les étapes 1 à 4)
+- **Durée** : 62 minutes en séance (15, 20, 10 et 17 minutes pour les étapes 1 à 4)
 - **Séance** : 5 (Tracing distribué, conventions sémantiques GenAI et corrélation)
 - **Code de session console** : `PX5KG49K8T`
 - **Checkpoint évalué** : Checkpoint 3 (`make check-lab3 PIN=<votre_pin> ETU=<votre_numero_etudiant>`)
@@ -34,7 +34,7 @@
 
 ## Étapes à réaliser
 
-### Étape 1 — Auto-instrumentation et contexte W3C sur `rag` et `worker` (17 min)
+### Étape 1 — Auto-instrumentation et contexte W3C sur `rag` et `worker` (15 min)
 
 > **Questions avant de manipuler**
 > - **Q1.** Au départ, seuls `traefik` et `gateway` produisent des spans. À quoi ressemblera la trace d'une requête `/ask`, et qu'y manquera-t-il ?
@@ -89,23 +89,42 @@
 > - **Q5.** Une fois votre span `rag.retrieval` ouvert, la requête SQL de la recherche deviendra son enfant dans la trace. Pourquoi ?
 > - **Q6.** Pourquoi utiliser des noms imposés comme `gen_ai.request.model`, plutôt que des noms choisis par chaque équipe ?
 
-1. Ouvrez `span-metier/span_metier.py`. Ce module est appelé par `rag` à chaque requête `/ask` sous la forme :
+**Pourquoi cette étape.** L'auto-instrumentation de l'étape 1 voit la plomberie : la requête HTTP reçue par `rag`, ses appels à la gateway, sa requête SQL. Elle ne sait rien du métier d'Orion : pour quelle équipe on cherche, combien de passages on demande et on trouve, à quelle distance est le meilleur, avec quel modèle d'embedding. `rag` connaît ces informations, mais il lui faut un span où les écrire : c'est le span métier `rag.retrieval`, que vous allez créer.
+
+1. **Avant de modifier : constatez ce qui manque.** Ouvrez dans Tempo la trace de l'étape 1.5 (ou envoyez une nouvelle requête `/ask` et ouvrez sa trace) :
+   - sous `orion-rag` › `POST /ask`, repérez le span `SELECT` : il est rattaché directement à `POST /ask`, sans aucune étape « recherche » autour de lui ;
+   - cliquez sur ce span et lisez ses attributs : ils ne parlent que de SQL (`db.system`, `db.statement`, `db.user`…). Rien ne dit pour quelle équipe la recherche a été faite, combien de passages ont été trouvés, ni à quelle distance.
+
+   Notez ce que vous voyez : vous le comparerez à l'étape 2.5.
+2. Ouvrez `span-metier/span_metier.py`. Ce module est appelé par `rag` à chaque requête `/ask` sous la forme :
    ```python
    with span_mod.retrieval_span(team=team, top_k=top_k) as custom_span:
        ...
    ```
-   Lorsque `retrieval_span` cède un span OpenTelemetry actif (`yield span`), `rag` y attache automatiquement :
+   Pour l'instant, `retrieval_span` ne crée aucun span : elle cède `None` (`yield None`), et `rag` n'a nulle part où écrire ses informations. Lorsque `retrieval_span` cédera un span OpenTelemetry actif (`yield span`), `rag` y attachera automatiquement :
    - `orion.team` ;
    - `rag.top_k` ;
    - `rag.docs_found` ;
    - `rag.top_distance`.
-2. Complétez `retrieval_span(team: str, top_k: int)` dans `span-metier/span_metier.py` pour :
-   - ouvrir un span nommé `"rag.retrieval"` avec `trace.get_tracer("orion.rag.metier").start_as_current_span("rag.retrieval")`, utilisé comme gestionnaire de contexte (`with ... as span:`) pour que le span se ferme à la fin du bloc appelant ;
-   - positionner sur ce span, avec `span.set_attribute(<clé>, <valeur>)`, les attributs des conventions sémantiques OpenTelemetry GenAI :
+3. Réécrivez le corps de `retrieval_span(team: str, top_k: int)` :
+   - **supprimez d'abord les lignes actuelles du corps** : le commentaire `# TODO(lab-3)`, puis `_ = (trace, team, top_k)` et `yield None`. Elles ne servent qu'à rendre le fichier valide en attendant votre code. Gardez le décorateur `@contextmanager`, la ligne `def` et la docstring ;
+   - ouvrez un span nommé `"rag.retrieval"` avec `trace.get_tracer("orion.rag.metier").start_as_current_span("rag.retrieval")`, utilisé comme gestionnaire de contexte (`with ... as span:`) pour que le span se ferme à la fin du bloc appelant ;
+   - positionnez sur ce span, avec `span.set_attribute(<clé>, <valeur>)`, les attributs des conventions sémantiques OpenTelemetry GenAI :
      - `gen_ai.operation.name = "retrieval"` ;
      - `gen_ai.provider.name = "orion"` ;
      - `gen_ai.request.model = "nomic-embed-text:v1.5"` ;
-   - céder le span (`yield span`) au bloc appelant.
+   - cédez le span (`yield span`) au bloc appelant, **à l'intérieur** du bloc `with` : en dehors, le span serait déjà fermé quand `rag` y écrit.
+
+   Une fois réécrite, la fonction a cette forme (complétez les deux attributs manquants) :
+   ```python
+   @contextmanager
+   def retrieval_span(team: str, top_k: int) -> Iterator[Any]:
+       """...la docstring d'origine..."""
+       with trace.get_tracer("orion.rag.metier").start_as_current_span("rag.retrieval") as span:
+           span.set_attribute("gen_ai.operation.name", "retrieval")
+           # ... les deux autres attributs gen_ai.* ...
+           yield span
+   ```
    > Comme `span_metier.py` est rechargé dynamiquement à chaque requête `/ask`, vous n'avez même pas besoin de redémarrer le conteneur `rag` après avoir enregistré le fichier.
    >
    > **Si le span n'apparaît pas ou si `/ask` répond `HTTP 500`** :
@@ -113,13 +132,13 @@
    >   ```bash
    >   python3 -m py_compile span-metier/span_metier.py && echo "syntaxe correcte"
    >   ```
-   > - un module qui lève une exception pendant la requête fait échouer **toutes** les requêtes `/ask` en `HTTP 500`. Le message d'erreur, qui cite `span_metier.py` et la ligne fautive, se lit dans les journaux de `rag` :
+   > - un module qui lève une exception pendant la requête fait échouer **toutes** les requêtes `/ask` en `HTTP 500`. C'est le cas si `yield None` est resté dans la fonction à côté de votre `yield span` : les journaux disent alors `generator didn't stop`. Le message d'erreur, qui cite `span_metier.py` et la ligne fautive, se lit dans les journaux de `rag` :
    >   ```bash
    >   docker compose -f compose/docker-compose.yml logs --since 2m rag | grep -B 8 Error
    >   ```
    >
    > En cas de doute, repartez du fichier d'origine avec `git checkout upstream/main -- span-metier/span_metier.py`.
-3. Envoyez une nouvelle requête sur `https://127.0.0.1:8443/ask` :
+4. Envoyez une nouvelle requête sur `https://127.0.0.1:8443/ask` :
    ```bash
    set -a && . ./.env && set +a
    curl --cacert config/traefik/certs/ca.crt -sS \
@@ -132,6 +151,7 @@
    Relevez la valeur du champ `"trace_id"` à la fin de l'objet JSON de la réponse et inspectez la trace correspondante dans Tempo (`http://127.0.0.1:3000/explore`, onglet **TraceQL**, identifiant collé seul, puis **Run query**). Les spans de `rag` arrivent dans Tempo 5 à 10 s après la requête ; si la trace paraît incomplète, attendez quelques secondes et relancez **Run query** :
    - vérifiez que le span `rag.retrieval` (sous `orion-rag`) apparaît bien autour de la requête SQL vers PostgreSQL, avec les attributs `rag.top_k`, `rag.docs_found`, `rag.top_distance`, `orion.team`, `gen_ai.operation.name`, `gen_ai.provider.name` et `gen_ai.request.model` (notez sa durée en régime nominal) ;
    - inspectez également le span `inference` émis par `gateway` dans la même trace et repérez les attributs `gen_ai.operation.name`, `gen_ai.provider.name`, `gen_ai.request.model`, `gen_ai.usage.input_tokens` et `gen_ai.usage.output_tokens`.
+5. **Comparez avec ce que vous aviez noté à l'étape 2.1** : quelles informations la trace donne-t-elle maintenant, qu'elle ne donnait pas ? Où se trouve désormais le span `SELECT`, et que mesure la durée de `rag.retrieval` ?
 
 ### Étape 3 — Corrélation Prometheus <-> Tempo <-> Loki (10 min)
 
@@ -149,7 +169,7 @@
    > Ce lien lance `{service=~".+"} | trace_id="<trace_id>"` : il suppose votre pipeline Alloy du lab 2a (label `service`, `trace_id` en métadonnée structurée). Si Loki ne renvoie aucune ligne, vérifiez `config/alloy/config.alloy` ; en attendant, cherchez le texte de l'identifiant avec `{service=~".+"} |= "<trace_id>"`.
 3. Inversement, depuis une ligne de log dans **Loki**, utilisez le lien dérivé **Voir la trace dans Tempo** pour revenir à l'arbre de spans.
 
-### Étape 4 — Prédiction et diagnostic d'une dégradation par les traces (15 min)
+### Étape 4 — Prédiction, diagnostic et rétablissement d'une dégradation par les traces (17 min)
 
 > **Question avant de manipuler**
 > - **Q10.** Quand une requête ralentit, pourquoi ne suffit-il pas de chercher le span le plus long de sa trace ? À quoi faut-il la comparer ?
@@ -180,7 +200,13 @@
      sum by (relname) (rate(pg_stat_user_tables_seq_scan[2m]))
      sum by (relname) (rate(pg_stat_user_tables_seq_tup_read[2m]))
      ```
-4. Rétablissez l'état nominal depuis la console (`http://127.0.0.1:8088`) en cliquant sur **« Clôturer l'incident et générer l'archive »** (partie 6) avant de lancer la vérification finale du Checkpoint 3. Avant de clôturer, il est facultatif d'enregistrer une observation dans la partie 3 puis d'appliquer un levier de mitigation dans la partie 4.
+4. **Rétablissez le service, comme au game day.** Dans la console (`http://127.0.0.1:8088`), partie 3 :
+   - déclarez l'incident (symptôme observé, sévérité) ;
+   - ajoutez une observation qui décrit ce que vous avez trouvé, avec sa requête de preuve (TraceQL ou PromQL, par exemple l'une de l'étape 4.3).
+
+   La console exige au moins une observation avant tout levier. Partie 4 : choisissez la catégorie de levier et la cible qui corrigent la cause trouvée, puis cliquez sur **Exécuter le levier**.
+5. **Vérifiez le rétablissement par les traces.** Renvoyez la requête `/ask` de l'étape 4.3 et ouvrez sa trace : le span que vous avez mis en cause doit retrouver sa durée de l'étape 2. Si rien ne change, le levier choisi ne corrigeait pas la cause : relisez votre diagnostic et essayez-en un autre.
+6. Cliquez sur **« Clôturer l'incident et générer l'archive »** (partie 6) avant de lancer la vérification finale du Checkpoint 3. La clôture remet aussi Orion dans son état de départ.
 
 ## Vérifier votre réussite (Checkpoint 3)
 
