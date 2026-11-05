@@ -5,7 +5,7 @@ groups:
       - record: job:traefik_requests:rate5m
         expr: sum(rate(traefik_service_requests_total{service="rag@file", code!="429"}[5m]))
 
-      # TODO(lab-1b): calculer le ratio d'erreurs 5xx (hors 429) du service rag@file sur une fenêtre de 8m
+      # Ratio erreurs 5xx / total requetes hors 429 sur 8m
       - record: job:traefik_errors:ratio_rate8m
         expr: |
           (
@@ -15,7 +15,7 @@ groups:
           /
           sum(rate(traefik_service_requests_total{service="rag@file", code!="429"}[8m]))
 
-      # TODO(lab-1b): calculer le ratio d'erreurs 5xx (hors 429) du service rag@file sur une fenêtre de 40s
+      # Meme ratio sur fenetre courte de 40s (avec vector(0) si pas de 5xx)
       - record: job:traefik_errors:ratio_rate40s
         expr: |
           (
@@ -48,8 +48,7 @@ groups:
   - name: orion_slo_alerts
     interval: 10s
     rules:
-      # TODO(lab-1b): écrire l'alerte de burn rate multi-fenêtres (8m et 40s, facteur 14.4 sur budget 0.005,
-      # garde de volume >= 10 requêtes hors 429 sur 40s, keep_firing_for: 2m, sans clause for:)
+      # Alerte burn rate multi-fenetres (8m et 40s) a 14.4x sur le budget d'erreur 0.5%
       - alert: OrionSLODisponibiliteBurnRatePage
         expr: |
           job:traefik_errors:ratio_rate8m > (14.4 * 0.005)
@@ -131,5 +130,15 @@ groups:
           summary: "Absence de trafic ou échec de la sonde HTTPS sur Traefik"
           description: "Aucune requête n'est observée sur le service rag@file depuis 5 min ou la sonde blackbox HTTPS échoue."
 
-      # TODO(lab-2b): ajouter l'alerte OrionWorkerFraicheurIndexationTicket (severity: ticket, service: orion-worker)
-      # lorsque l'indexation documentaire du worker ne progresse plus.
+      # Obs : cycle du worker ~60s avec pic max a ~75s en nominal.
+      # Seuil a 150s (~2x le pic max) + confirmation for: 1m pour eviter les faux positifs si un cycle lag.
+      # Declenchement sous les 4 min en cas de blocage (~3m30).
+      - alert: OrionWorkerFraicheurIndexationTicket
+        expr: (time() - worker_last_success_timestamp_seconds) > 150
+        for: 1m
+        labels:
+          severity: ticket
+          service: orion-worker
+        annotations:
+          summary: "Arrêt de l'indexation documentaire du worker (fraîcheur > 150s)"
+          description: "Le worker d'indexation n'a pas terminé de cycle réussi depuis plus de 150s."
