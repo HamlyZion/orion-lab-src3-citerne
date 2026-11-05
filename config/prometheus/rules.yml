@@ -5,7 +5,6 @@ groups:
       - record: job:traefik_requests:rate5m
         expr: sum(rate(traefik_service_requests_total{service="rag@file", code!="429"}[5m]))
 
-      # TODO(lab-1b): calculer le ratio d'erreurs 5xx (hors 429) du service rag@file sur une fenêtre de 8m
       - record: job:traefik_errors:ratio_rate8m
         expr: |
           (
@@ -15,7 +14,6 @@ groups:
           /
           sum(rate(traefik_service_requests_total{service="rag@file", code!="429"}[8m])) 
 
-      # TODO(lab-1b): calculer le ratio d'erreurs 5xx (hors 429) du service rag@file sur une fenêtre de 40s
       - record: job:traefik_errors:ratio_rate40s
         expr: |
           (
@@ -48,8 +46,6 @@ groups:
   - name: orion_slo_alerts
     interval: 10s
     rules:
-      # TODO(lab-1b): écrire l'alerte de burn rate multi-fenêtres (8m et 40s, facteur 14.4 sur budget 0.005,
-      # garde de volume >= 10 requêtes hors 429 sur 40s, keep_firing_for: 2m, sans clause for:)
       - alert: OrionSLODisponibiliteBurnRatePage
         expr: |
           job:traefik_errors:ratio_rate8m > (14.4 * 0.005)

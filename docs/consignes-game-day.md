@@ -66,8 +66,8 @@ Si votre groupe se trouve bloqué, trois niveaux d'indices progressifs peuvent �
 
 ### Clôture et archivage
 - Avant la fin des 60 minutes, l'Incident Commander consigne la cause racine identifiée et la requête de preuve associée.
-- L'équipe clique sur « Clôturer et exporter » dans la console.
-- Cette action génère une archive compressée `.tar.gz` dans le dossier des exports de la plateforme.
+- L'équipe clique sur « Clôturer l'incident et générer l'archive » dans la console.
+- Cette action génère une archive compressée `.tar.gz` (`timeline.md`, `journal.age` et les extraits de télémétrie). Téléchargez-la avec le bouton « Télécharger l'archive (.tar.gz) » ; elle est aussi conservée dans `.orion-state/exports/`.
 
 ---
 
@@ -104,7 +104,7 @@ Au fil de votre session, la console alimente automatiquement deux représentatio
    - Sert de base à la rédaction de votre post-mortem.
 2. **`journal.age` (chiffré)** :
    - Fichier chiffré avec la clé publique de l'enseignant.
-   - Chaque ligne correspond à un événement horodaté, numéroté de façon séquentielle ($seq = 1..N$) et lié cryptographiquement au précédent par une chaîne de hachage SHA-256.
+   - Chaque ligne correspond à un événement horodaté, numéroté de façon séquentielle (de 1 à N) et lié cryptographiquement au précédent par une chaîne de hachage SHA-256.
    - Garantit l'inviolabilité, l'authenticité et la non-répudiation des actions du groupe.
    - Toute altération ou suppression de ligne est automatiquement détectée lors de la correction.
 
@@ -118,8 +118,8 @@ Le Game Day compte pour **15 %** de la note finale du module. La notation s'appu
 
 | Critère | Points | Modalités d'attribution |
 |---|---|---|
-| **Délai moyen de détection (MTTD)** | **3** | Calculé par le ratio $r = \text{MTTD}_{\text{groupe}} / \text{MTTD}_{\text{référence}}$ :<br>- $r \le 1{,}25$ : **3 points**<br>- $r \le 1{,}75$ : **2 points**<br>- $r \le 2{,}50$ : **1 point**<br>- $r > 2{,}50$ ou incident non déclaré : **0 point**.<br>*Chaque faux positif retire 1 point de ce critère (plancher à 0).* |
-| **Délai de rétablissement (MTTR) et mitigations** | **5** | **MTTR relatif (3 points)**, selon la même échelle de ratio $r = \text{MTTR}_{\text{groupe}} / \text{MTTR}_{\text{référence}}$ :<br>- $r \le 1{,}25$ : **3 points**<br>- $r \le 1{,}75$ : **2 points**<br>- $r \le 2{,}50$ : **1 point**<br>- $r > 2{,}50$ ou indicateur non rétabli : **0 point**.<br>**Mitigations justifiées (2 points)** :<br>- 2 points si toutes les actions sont précédées d'une observation documentée.<br>- 1 point si une seule action manque de justification.<br>- 0 point si deux actions ou plus ne sont pas justifiées, ou si aucune mitigation n'a été saisie. |
+| **Délai moyen de détection (MTTD)** | **3** | Calculé par le ratio r = MTTD du groupe / MTTD de référence :<br>- r ≤ 1,25 : **3 points**<br>- r ≤ 1,75 : **2 points**<br>- r ≤ 2,50 : **1 point**<br>- r > 2,50 ou incident non déclaré : **0 point**.<br>*Chaque faux positif retire 1 point de ce critère (plancher à 0).* |
+| **Délai de rétablissement (MTTR) et mitigations** | **5** | **MTTR relatif (3 points)**, selon la même échelle de ratio r = MTTR du groupe / MTTR de référence :<br>- r ≤ 1,25 : **3 points**<br>- r ≤ 1,75 : **2 points**<br>- r ≤ 2,50 : **1 point**<br>- r > 2,50 ou indicateur non rétabli : **0 point**.<br>**Mitigations justifiées (2 points)** :<br>- 2 points si toutes les actions sont précédées d'une observation documentée.<br>- 1 point si une seule action manque de justification.<br>- 0 point si deux actions ou plus ne sont pas justifiées, ou si aucune mitigation n'a été saisie. |
 | **Cause racine déclarée à chaud** | **4** | - Juste et prouvée par une requête de télémétrie : **4 points**.<br>- Juste mais sans preuve recevable : **2 points**.<br>- Bonne couche architecturale mais mauvais composant : **1 point**.<br>- Fausse ou absente : **0 point**.<br>*Incidents combinés* : l'identification documentée du second incident rapporte **1 point bonus** (dans la limite du plafond de 4 points sur ce critère).<br>*En cas d'usage d'un outil interdit constaté* : note ramenée à **0 point**. |
 | **Tenue de la chronologie et export** | **3** | - Chronologie complète et cohérente dans la console (rôles, déclarations, observations, cause, clôture) : **2 points**.<br>- Archive d'export générée avant la fin de la séance : **1 point**. |
 | **Total brut** | **15** | |

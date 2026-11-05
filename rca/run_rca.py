@@ -62,6 +62,14 @@ def determine_output_path(cli_path: str | None = None) -> Path:
     return Path("rca.yaml")
 
 
+def host_path(path: Path) -> str:
+    """Chemin à afficher : /exports du conteneur correspond à exports/rca/ dans le dépôt."""
+    try:
+        return str(Path("exports/rca") / path.relative_to("/exports"))
+    except ValueError:
+        return str(path)
+
+
 def format_report_yaml(report: RCAOutputReport) -> str:
     """Formate le rapport en YAML propre et lisible avec commentaires pour l'étudiant."""
     data = {
@@ -203,7 +211,7 @@ def run() -> int:
     duration_s = meta.get("total_duration_seconds", (datetime.datetime.now(datetime.timezone.utc) - start_time).total_seconds())
 
     # 5. Réhydratation et génération de rca.yaml
-    print(f"\n[5/5] 💾 Réhydratation des requêtes de preuve et écriture de {output_path}...")
+    print(f"\n[5/5] 💾 Réhydratation des requêtes de preuve et écriture de {host_path(output_path)}...")
     rehydrated_hypotheses = rehydrate_report(parsed_output, catalogue)
 
     report = RCAOutputReport(
@@ -225,7 +233,7 @@ def run() -> int:
         os.chmod(output_path, 0o666)
     except OSError:
         pass
-    print(f"       -> Rapport généré avec succès dans {output_path} ({duration_s}s)")
+    print(f"       -> Rapport généré avec succès dans {host_path(output_path)} ({duration_s}s)")
 
     # Affichage du résumé pour les étudiants
     print("\n" + "=" * 70)
@@ -238,7 +246,7 @@ def run() -> int:
         print(f"    Confiance        : {conf_str}")
         print(f"    Preuve requise   : [{hyp.query_id}] ({hyp.signal_type}) {hyp.proof_query}")
     print("\n" + "=" * 70)
-    print(f"👉 N'oubliez pas d'examiner {output_path} et de renseigner le champ 'verdict'.\n")
+    print(f"👉 N'oubliez pas d'examiner {host_path(output_path)} et de renseigner le champ 'verdict'.\n")
 
     return 0
 
