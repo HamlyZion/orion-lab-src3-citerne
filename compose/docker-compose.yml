@@ -19,15 +19,15 @@ services:
     image: ${ORION_RAG_IMAGE:-ghcr.io/jassouline/orion-rag:sha-6edc2c2}
     restart: unless-stopped
     mem_limit: 256m
-    # TODO(lab-3): surcharger command avec opentelemetry-instrument pour auto-instrumenter FastAPI, httpx et psycopg
+    command: ["opentelemetry-instrument", "uvicorn", "src.rag.app:app", "--host", "0.0.0.0", "--port", "8000"]
     environment:
       OTEL_SERVICE_NAME: orion-rag
+      OTEL_RESOURCE_ATTRIBUTES: service.version=1.4.1,deployment.environment=lab
       OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
       OTEL_TRACES_EXPORTER: otlp
       OTEL_METRICS_EXPORTER: none
       OTEL_LOGS_EXPORTER: none
       OTEL_SEMCONV_STABILITY_OPT_IN: http
-      # TODO(lab-3): définir OTEL_RESOURCE_ATTRIBUTES (service.version, deployment.environment)
       DATABASE_URL: postgresql://orion:${POSTGRES_PASSWORD:-orion}@postgres:5432/orion
       RAG_DB_DSN: postgresql://orion:${POSTGRES_PASSWORD:-orion}@postgres:5432/orion
       GATEWAY_URL: http://gateway-llm:8000
@@ -96,10 +96,11 @@ services:
     image: ${ORION_WORKER_IMAGE:-ghcr.io/jassouline/orion-worker:sha-6edc2c2}
     restart: unless-stopped
     mem_limit: 512m
-    # TODO(lab-3): surcharger command avec opentelemetry-instrument pour auto-instrumenter le worker
+    command: ["opentelemetry-instrument", "python", "-m", "src.worker.app"]
     environment:
       OTEL_SERVICE_NAME: orion-worker
-      # TODO(lab-3): activer l'export OTLP vers http://alloy:4317 et définir OTEL_RESOURCE_ATTRIBUTES
+      OTEL_RESOURCE_ATTRIBUTES: service.version=1.4.1,deployment.environment=lab
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
       OTEL_TRACES_EXPORTER: otlp
       OTEL_METRICS_EXPORTER: none
       OTEL_LOGS_EXPORTER: none
