@@ -32,6 +32,7 @@ loki.source.docker "containers" {
 }
 
 loki.process "orion_logs" {
+  // Masquage des cles et mails avant parsing JSON (sans les quotes pour pas corrompre le payload)
   stage.replace {
     expression = "(sk-nordel-[a-zA-Z]+-[a-zA-Z0-9]+)"
     replace    = "[CLE_MASQUEE]"
@@ -41,6 +42,7 @@ loki.process "orion_logs" {
     replace    = "[MAIL_MASQUE]"
   }
 
+  // Extraction des champs du JSON
   stage.json {
     expressions = {
       ts       = "ts",
@@ -54,6 +56,7 @@ loki.process "orion_logs" {
     }
   }
 
+  // Labels a faible cardinalite pour ne pas exploser le budget des 1000 flux
   stage.labels {
     values = {
       service = "service",
@@ -62,6 +65,7 @@ loki.process "orion_logs" {
     }
   }
 
+  // Identifiants uniques en structured metadata pour eviter la cardinalite folle
   stage.structured_metadata {
     values = {
       trace_id = "trace_id",
