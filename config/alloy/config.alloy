@@ -33,26 +33,41 @@ loki.source.docker "containers" {
 
 loki.process "orion_logs" {
   // # TODO(lab-2a): ajouter les étapes stage.replace pour masquer les données sensibles dans les logs
+  stage.replace {
+	expression = "(sk-nordel-[a-zA-Z]+-[a-zA-Z0-9]+)"
+	replace = "[CLE_MASQUEE]"
+  }
+  stage.replace {
+    expression = "([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,})"
+    replace    = "[MAIL_MASQUEE]"
+  }
 
   stage.json {
     expressions = {
       ts      = "ts",
+      level = "level",
       service = "service",
       msg     = "msg",
-      // # TODO(lab-2a): extraire les champs JSON nécessaires au tri et à la corrélation
+      trace_id = "trace_id",
+      team = "team",
+      span_id = "span_id",
+      version = "version",
     }
   }
 
   stage.labels {
     values = {
-      service = "",
-      // # TODO(lab-2a): sélectionner les labels à faible cardinalité (budget <= 1 000 flux actifs)
+      service = "service",
+      team = "team",
+      level = "level",
     }
   }
 
   stage.structured_metadata {
     values = {
-      // # TODO(lab-2a): attacher les champs à forte cardinalité (ex. trace_id) via stage.structured_metadata
+      trace_id = "trace_id",
+      span_id  = "span_id",
+      version = "version",
     }
   }
 
