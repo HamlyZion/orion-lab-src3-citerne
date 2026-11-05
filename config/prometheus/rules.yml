@@ -127,8 +127,6 @@ groups:
           summary: "Absence de trafic ou échec de la sonde HTTPS sur Traefik"
           description: "Aucune requête n'est observée sur le service rag@file depuis 5 min ou la sonde blackbox HTTPS échoue."
 
-      # TODO(lab-2b): ajouter l'alerte OrionWorkerFraicheurIndexationTicket (severity: ticket, service: orion-worker)
-      # lorsque l'indexation documentaire du worker ne progresse plus.
       - alert: OrionAuditDatabaseSaturationPredite
         expr: |
           predict_linear(pg_database_size_bytes{datname="orion_audit"}[10m], 4 * 3600) > 50 * 10^6
@@ -141,3 +139,14 @@ groups:
         annotations:
           summary: "Saturation prévisible de la base d'audit orion_audit sous 4 heures"
           description: "L'extrapolation linéaire de pg_database_size_bytes sur 10 min prévoit le dépassement de la capacité déclarée de 50 Mo dans 4 heures."
+
+      - alert: OrionWorkerFraicheurIndexationTicket
+        expr: (time() - worker_last_success_timestamp_seconds) > 140
+        for: 30s
+        labels:
+          severity: ticket
+          service: orion-worker
+        annotations:
+          summary: "L'indexation documentaire du worker Orion ne progresse plus"
+          description: "Le dernier cycle d'indexation réussi remonte à {{ $value | humanizeDuration }} (seuil : 140 s)."
+>>>>>>> 5d3080abb3f411f42b29705d5622bc66c12ed415

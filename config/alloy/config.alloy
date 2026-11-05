@@ -32,7 +32,6 @@ loki.source.docker "containers" {
 }
 
 loki.process "orion_logs" {
-  // # TODO(lab-2a): ajouter les étapes stage.replace pour masquer les données sensibles dans les logs
   stage.replace {
 	expression = "(sk-nordel-[a-zA-Z]+-[a-zA-Z0-9]+)"
 	replace = "[CLE_MASQUEE]"
