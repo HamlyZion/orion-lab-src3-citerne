@@ -54,7 +54,8 @@ rca:
 		exit 1; \
 	fi; \
 	mkdir -p rca exports/rca; \
-	chmod -R 0777 exports rca 2>/dev/null || true; \
+	chmod -R 0777 exports 2>/dev/null || true; \
+	chmod -R a+rX rca 2>/dev/null || true; \
 	COMPOSE_ARGS="-f compose/docker-compose.yml"; \
 	if [ "$${ORION_USE_LINUX_COMPOSE:-0}" = "1" ]; then \
 		COMPOSE_ARGS="$$COMPOSE_ARGS -f compose/linux.yml"; \

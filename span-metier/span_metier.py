@@ -18,9 +18,10 @@ def retrieval_span(team: str, top_k: int) -> Iterator[Any]:
     automatiquement les attributs `orion.team`, `rag.top_k`, `rag.docs_found` et
     `rag.top_distance`.
     """
-    # TODO(lab-3): remplacer `yield None` par l'ouverture d'un span "rag.retrieval"
-    # à l'aide de trace.get_tracer("orion.rag.metier").start_as_current_span("rag.retrieval"),
+    # TODO(lab-3): supprimer ce commentaire et les deux lignes qui le suivent
+    # (`_ = ...` et `yield None`), puis ouvrir un span "rag.retrieval" avec
+    # trace.get_tracer("orion.rag.metier").start_as_current_span("rag.retrieval"),
     # poser les attributs GenAI (gen_ai.operation.name, gen_ai.provider.name,
-    # gen_ai.request.model), puis céder le span avec `yield span`.
+    # gen_ai.request.model) et céder le span avec `yield span`, dans le bloc `with`.
     _ = (trace, team, top_k)
     yield None

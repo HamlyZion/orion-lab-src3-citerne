@@ -28,7 +28,7 @@ Dans toutes les séances de lab utilisant la console d'incident (Labs 1b, 2b, 3,
    - **Règle d'exploitation** : **aucun levier de la partie 4 ne peut être exécuté sans qu'au moins une observation ait été enregistrée depuis le dernier levier.**
 4. **Partie `5. Indices progressifs et révélation` (si vous êtes bloqués)** :
    - Trois niveaux d'indices (**`Indice 1 (-1 pt)`**, **`Indice 2 (-1,5 pt)`**, **`Indice 3 (-2 pts)`**) et le bouton **`Révéler l'incident (Lab)`** sont utilisables sans attente en séance de lab.
-   - **Les pénalités de points affichées sur les indices ne comptent qu'au Game Day évalué (séance 6)** : en séance de lab, servez-vous des indices si vous êtes bloqués après quelques minutes d'investigation (et de **`Révéler l'incident (Lab)`** uniquement en dernier recours).
+   - **Les pénalités de points affichées sur les indices ne comptent qu'au Game Day évalué (séance 8)** : en séance de lab, servez-vous des indices si vous êtes bloqués après quelques minutes d'investigation (et de **`Révéler l'incident (Lab)`** uniquement en dernier recours).
 5. **Partie `4. Mitiger — Catalogue d'actions` — Exécuter le levier et vérifier le retour à la normale** :
    - Une fois l'observation enregistrée en partie 3, le **Mitigator** sélectionne la **`Catégorie de levier`** et la **`Cible ou paramètre`**, puis clique sur **`Exécuter le levier`**.
    - Un levier pertinent corrige ou contourne la panne injectée dans la pile Orion.
@@ -36,7 +36,7 @@ Dans toutes les séances de lab utilisant la console d'incident (Labs 1b, 2b, 3,
 6. **Partie `6. Cause racine, clôture et export des preuves` — Cause racine, clôture et archive** :
    - Lorsque le retour à la normale est vérifié, remplissez **`Cause racine identifiée (mécanisme précis)`** et **`Preuve technique (requête ou extrait de log/trace)`**, puis cliquez sur **`Enregistrer la cause racine`**.
    - L'**IC** renseigne ensuite le **`Bilan de clôture (état du SLI après rétablissement)`** et clique sur **`Clôturer l'incident et générer l'archive`**.
-   - **Faut-il envoyer la chronologie ou l'archive `.tar.gz` pendant les labs ? Non.** En séance de lab, l'archive générée (`Télécharger l'archive (.tar.gz)`) n'est pas à remettre : la console sert d'entraînement pour le Game Day de la séance 6 (où l'archive sera jointe à votre post-mortem).
+   - **Faut-il envoyer la chronologie ou l'archive `.tar.gz` pendant les labs ? Non.** En séance de lab, l'archive générée (`Télécharger l'archive (.tar.gz)`) n'est pas à remettre : la console sert d'entraînement pour le Game Day de la séance 8 (où l'archive sera jointe à votre post-mortem).
 
 ---
 

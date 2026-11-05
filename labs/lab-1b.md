@@ -122,7 +122,7 @@ Pour le déroulé général d'une session dans la console d'incident (`http://12
    - Cliquez sur **`Ajouter l'observation au journal`**. **Un levier de la partie 4 ne peut être exécuté que si au moins une observation a été enregistrée au préalable.**
 5. **Partie `5. Indices progressifs et révélation` (uniquement si vous êtes bloqués)** :
    - Trois niveaux d'indices (**`Indice 1 (-1 pt)`**, **`Indice 2 (-1,5 pt)`** et **`Indice 3 (-2 pts)`**) sont disponibles pour vous débloquer progressivement.
-   - **Les pénalités de points affichées ne comptent qu'au Game Day évalué de la séance 6** : en séance de lab, servez-vous des indices si vous êtes bloqués (le bouton **`Révéler l'incident (Lab)`** affiche la panne en dernier recours).
+   - **Les pénalités de points affichées ne comptent qu'au Game Day évalué de la séance 8** : en séance de lab, servez-vous des indices si vous êtes bloqués (le bouton **`Révéler l'incident (Lab)`** affiche la panne en dernier recours).
 6. **Partie `4. Mitiger — Catalogue d'actions` — Appliquer le levier pertinent (`Mitigator`) et vérifier le retour à la normale** :
    - Sélectionnez :
      - **`Catégorie de levier`** : **`Ajustement d'un paramètre de configuration`**
@@ -136,7 +136,7 @@ Pour le déroulé général d'une session dans la console d'incident (`http://12
    - Dès que le retour à la normale est constaté (à la fin de l'étape 5, ou à la fin de l'étape 6), renseignez **`Cause racine identifiée (mécanisme précis)`** (gabarit : `<composant et paramètre en cause> provoquant <effet mesuré sur chaque requête>`) et **`Preuve technique (requête ou extrait de log/trace)`** (gabarit : `<requête PromQL établissant la cause racine>`), puis cliquez sur **`Enregistrer la cause racine`**.
    - Renseignez ensuite **`Bilan de clôture (état du SLI après rétablissement)`** (gabarit : `<levier appliqué> ; <SLI> revenu à <valeur nominale> et alerte <nom> repassée inactive`) et cliquez sur **`Clôturer l'incident et générer l'archive`**.
    - **Important** :
-     - **L'archive `.tar.gz` et la chronologie `timeline.md` ne sont pas à remettre au lab** : c'est uniquement l'entraînement pour le Game Day de la séance 6.
+     - **L'archive `.tar.gz` et la chronologie `timeline.md` ne sont pas à remettre au lab** : c'est uniquement l'entraînement pour le Game Day de la séance 8.
      - **L'injection générique de l'étape 6 est située en partie 2 et ne dépend pas de l'ouverture ou de la clôture de la session** : vous pouvez aussi bien clôturer l'incident à la fin de l'étape 5 que garder la session ouverte pendant l'étape 6. *(Si le sous-panneau d'injection générique n'est pas visible en bas de la partie 2, lancez `make start-lab1b` dans votre terminal et rafraîchissez la page `http://127.0.0.1:8088`.)*
 
 ### Étape 6 — Observer l'alerte pendant une injection d'erreurs (10 min)

@@ -27,7 +27,7 @@ Topologie et composants autorises (choisis uniquement parmi ces 7 identifiants) 
 - simule : simulateur LLM (llm-simule:11435, generation chat nominale 1.2s a 2.0s)
 - postgres-db : moteur SQL interne (temps_actif_sql_par_tx, seq_scan_documents ; nominal < 0.02s)
 - postgres-link : liaison reseau TCP entre orion-rag et postgres:5432
-Regle d'attribution : formule 2 hypotheses sur les seuls composants presentant un ecart franc par rapport au comportement nominal. Distingue le temps d'appel observe cote client (stage ou span sortant avec cible) du temps d'execution interne cote serveur : si l'appel vers une cible distante s'allonge alors que le serveur distant reste rapide en interne, incrimine la liaison reseau correspondante et l'etape appelante plutot que le serveur distant.
+Regle d'attribution : formule 2 hypotheses sur les seuls composants presentant un ecart franc par rapport au comportement nominal. Distingue le temps d'appel observe cote client (stage ou span sortant avec cible) du temps d'execution interne cote serveur : si l'appel vers une cible distante s'allonge alors que le serveur distant reste rapide en interne, incrimine la liaison reseau correspondante plutot que le serveur distant.
 Reponds en JSON compact sur UNE SEULE LIGNE sans indentation ni parenthese (cause factuelle de 4 a 8 mots) :
 {"hypotheses":[{"rank":1,"component":"<composant_1>","cause":"<4 a 8 mots sans parenthese>","query_id":"<Qn>","confidence":"high"},{"rank":2,"component":"<composant_2>","cause":"<4 a 8 mots sans parenthese>","query_id":"<Qm>","confidence":"medium"}]}"""
 

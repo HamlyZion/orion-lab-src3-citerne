@@ -1,9 +1,11 @@
 # Lab 4a — Détection d'anomalies, saisonnalité et prédiction linéaire
 
+> **Lab facultatif, non noté.** La séance 6 n'a pas lieu : ce lab reste disponible pour qui veut approfondir la détection d'anomalies et `predict_linear`. La règle prédictive contrôlée au checkpoint 4 est fournie à l'étape 5 du lab 4b.
+
 - **Durée** : 60 minutes
-- **Séance** : 6 (Détection d'anomalies, saisonnalité et prédiction)
+- **Séance** : aucune (lab facultatif, à faire en autonomie)
 - **Code de session console** : `PF5HHRZQJ9`
-- **Validation** : Ce lab prépare la règle prédictive évaluée au Checkpoint 4 (séance 7)
+- **Validation** : aucune. Le checkpoint 4 (séance 7) contrôle une règle prédictive fournie dans l'énoncé du lab 4b
 - **Dépôt de travail** : votre dépôt de trinôme, créé une seule fois à la séance 1 (README, §1 : `git clone https://github.com/jassouline/orion-lab.git`, puis `upstream` et `origin`). `make start-lab4a` remet l'état d'exécution à zéro sans toucher à vos fichiers.
 
 ## Objectifs
@@ -120,7 +122,7 @@ Cette alerte prévient l'exploitant plusieurs heures avant la saturation, transf
 4. Comparez les deux méthodes **en comptant les faux positifs en nombre d'échantillons au pas de `10s`** sur la plage `3h` pendant les périodes normales (`orion_lab4a_ground_truth_anomaly == 0`) :
    - Combien d'échantillons faux positifs (au pas de `10s`) générait le z-score `> 2.5` en dehors des vraies anomalies (vous pouvez le mesurer directement via `count_over_time(((abs(job:traefik_requests:rate5m - avg_over_time(job:traefik_requests:rate5m[15m])) / (stddev_over_time(job:traefik_requests:rate5m[15m]) + 1e-6) > 2.5) and on() (orion_lab4a_ground_truth_anomaly == 0))[3h:10s])`) ?
    - Combien d'échantillons faux positifs subsistent avec `abs(job:traefik_requests:rate5m - (job:traefik_requests:rate5m offset 1h)) > 0.15`, et comment ce seuil capte-t-il l'intégralité des deux anomalies de débit (hausse brutale et chute de trafic) sans déclencher sur la sinusoïde ?
-   - Remarquez qu'une des trois fenêtres où `orion_lab4a_ground_truth_anomaly == 1` est une anomalie pure de latence à trafic normal (visible sur `job:orion_gateway_latency_p95:5m`, mais invisible sur le débit `job:traefik_requests:rate5m`) : ce constat prépare l'investigation multi-signaux de la séance 7.
+   - Remarquez qu'une des trois fenêtres où `orion_lab4a_ground_truth_anomaly == 1` est une anomalie pure de latence à trafic normal (visible sur `job:orion_gateway_latency_p95:5m`, mais invisible sur le débit `job:traefik_requests:rate5m`).
 
 ### Étape 3 — Règle d'alerte prédictive avec `predict_linear()` (15 min)
 
@@ -171,6 +173,6 @@ Avant de quitter la séance, vérifiez les quatre points suivants :
 4. La session a été refermée via **« Clôturer l'incident et générer l'archive »** sur `http://127.0.0.1:8088`.
 
 > [!IMPORTANT]
-> **Conservation pour la séance 7 (Lab 4b)** : Conservez votre règle d'alerte `OrionAuditDatabaseSaturationPredite` dans `config/prometheus/rules.yml`. Elle sera vérifiée et testée automatiquement lors du Checkpoint 4 (`make check-lab4b`).
+> **Pour le lab 4b** : si vous gardez votre règle `OrionAuditDatabaseSaturationPredite` dans `config/prometheus/rules.yml`, le checkpoint 4 (`make check-lab4b`) la contrôlera à la place de la règle fournie à l'étape 5 du lab 4b.
 
 Fin de séance : `make down` arrête la pile en conservant vos données ; `make start-lab4a` la relance.

@@ -1,20 +1,23 @@
 # Lab 4b — Analyse de cause racine (RCA) assistée par LLM local et exploitation d'AIOps
 
-- **Durée** : 75 minutes
+- **Durée** : 70 minutes en séance (14, 12, 14, 20 et 10 minutes pour les étapes 1 à 5)
 - **Séance** : 7 (RCA assistée par LLM local et évaluation d'AIOps)
 - **Code de session console** : `XQXFBSMZHD`
-- **Checkpoint évalué** : Checkpoint 4 (`make check-lab4b PIN=<votre_pin> ETU=<votre_numero_etudiant>`)
+- **Checkpoint évalué** : Checkpoint 4 (`make check-lab4b PIN=<code écrit au tableau> ETU=<votre numéro étudiant>`)
+- **Poste** : la machine de 16 Go du trinôme. `make rca` refuse de s'exécuter en mode `LOW_MEM=1`.
 - **Dépôt de travail** : votre dépôt de trinôme, créé une seule fois à la séance 1 (README, §1 : `git clone https://github.com/jassouline/orion-lab.git`, puis `upstream` et `origin`). `make start-lab4b` remet l'état d'exécution à zéro sans toucher à vos fichiers.
+
+> **Ce qui est noté** : le checkpoint 4 compte pour 7,5 % de la note, au niveau du trinôme, validé ou non. Il vérifie la règle prédictive fournie à l'étape 5 et votre rapport `exports/rca/rca.yaml`. La preuve de validation est un jeton chiffré que vous poussez dans votre dépôt.
 
 ## Objectifs
 
 À l'issue de ce lab, vous saurez :
 
 1. Conduire l'investigation d'un incident en cours non annoncé et non nommé à l'aide des signaux de télémétrie, et vous approprier les réflexes de la console d'incident pour le game day.
-2. Exécuter l'outil d'analyse de cause racine (RCA) automatisé (`make rca`), comprendre le mécanisme de bail de suspension de routage sur la gateway et observer son rôle dans la gestion des ressources de calcul.
-3. Analyser et modifier le code source de l'outil de RCA dans `rca/` afin d'ajuster le prompt d'analyse et le catalogue dynamique de preuves.
-4. Révéler la cause réelle en fin de séance et qualifier formellement les hypothèses formulées par le modèle (`juste`, `fausse` ou `hallucinee`) en rejouant chaque requête de preuve dans Grafana.
-5. Valider le Checkpoint 4 vérifiant à la fois la règle prédictive du lab 4a et la conformité du rapport de RCA.
+2. Exécuter l'outil de RCA d'Orion (`make rca`), vérifier chacune de ses hypothèses avec sa requête de preuve, et observer le bail qu'il prend auprès de la gateway.
+3. Modifier ce que le modèle lit dans `rca/prompt.py` (descriptions des composants, règle d'attribution, descriptions des requêtes `Q1` à `Q8`), puis mesurer l'effet sur ses hypothèses.
+4. Rétablir le service avec un levier justifié par une observation, comme au game day, puis révéler la cause réelle et qualifier les hypothèses formulées par le modèle (`juste`, `fausse` ou `hallucinee`) en rejouant chaque requête de preuve dans Grafana.
+5. Valider le Checkpoint 4, qui vérifie la règle prédictive fournie et la conformité du rapport de RCA.
 
 ## Ce qui est fourni
 
@@ -24,7 +27,7 @@
   - `rca/prompt.py` : gabarits de prompts, catalogue dynamique de preuves Q1..Q8 et réhydratation des requêtes ;
   - `rca/lease.py` : gestionnaire de contexte du bail de suspension de la gateway (`POST /internal/routing-pause`) ;
   - `rca/tracer.py` : traçage OpenTelemetry GenAI des requêtes adressées au LLM local ;
-  - `rca/models.py` : schéma de données JSON unifié garantissant une réponse compacte et typée.
+  - `rca/models.py` : la liste des 7 composants et des identifiants `Q1` à `Q8` que le modèle a le droit de répondre (à ne pas modifier).
 - Le dossier de sortie `exports/rca/` recevant le rapport généré `rca.yaml`.
 - Le modèle d'inférence local `qwen3:1.7b` servi par Ollama.
 - La console d'incident sur `http://127.0.0.1:8088`.
@@ -34,123 +37,198 @@
 > git checkout upstream/main -- <chemin/du/fichier>
 > ```
 
-## Encadré de référence — Architecture d'une RCA automatisée et bail de suspension
+## Comment fonctionne `make rca`
 
-### L'approche « Collecte déterministe + Synthèse contrainte »
+`make rca` est l'outil de RCA écrit pour Orion. Il tourne dans un conteneur et lit le dossier `rca/` de votre dépôt à chaque exécution :
 
-Laisser un agent d'IA interroger une stack d'observabilité en totale autonomie (« exploration libre ») se heurte en production à trois écueils majeurs :
-1. Une consommation excessive de tokens et un temps de réponse incompatible avec les délais de crise ;
-2. Le risque de requêtes lourdes (scans non indexés sur Loki ou agrégations globales sur Prometheus) dégradant la stack d'observabilité elle-même ;
-3. Un taux élevé d'hallucinations sur des signaux normaux pris pour des anomalies.
+1. `rca/collect.py` interroge Prometheus, Loki et Tempo sur les 5 dernières minutes : alertes actives, durées par étape, logs d'erreur ou de requêtes lentes, traces de plus de 2,5 s.
+2. `rca/prompt.py` met ces données en forme pour le modèle, selon le mode que `make check` a écrit dans votre `.env` (`ORION_RCA_MODE`) : `raw`, des données presque brutes, sur un poste rapide ; `pre_aggregated`, un résumé calculé par Python, sur un poste plus lent. Le mode s'affiche sur la première ligne de `make rca`.
+3. Le modèle `qwen3:1.7b` répond au plus 2 hypothèses. Il ne peut choisir qu'un des 7 composants de `rca/models.py` et une des 8 requêtes du catalogue de `rca/prompt.py`, de `Q1` à `Q8`. Il ne voit pas les requêtes elles-mêmes, seulement leur description d'une ligne (`summary`).
+4. Python remplace l'identifiant choisi par la vraie requête et écrit `exports/rca/rca.yaml`, avec un champ `verdict` vide.
 
-L'outil d'Orion retient l'approche recommandée en AIOps moderne :
-- **Python collecte la télémétrie de manière déterministe** : alertes actives, séries clés, logs d'erreur ou requêtes lentes récentes, traces lentes avec leurs spans triés par durée.
-- **Python synthétise les faits et propose un catalogue compact de requêtes de preuve (`Q1` à `Q8`)**.
-- **Le modèle local sélectionne au plus 2 hypothèses**, désigne un identifiant de preuve `Qn` parmi le catalogue et formule sa cause en texte libre de 90 caractères au plus sous un schéma JSON strict.
-- **Python réhydrate le rapport final** en associant la requête complète et son type de signal.
+Pendant l'appel au modèle, `make rca` prend un **bail** auprès de la gateway : elle envoie alors tout son trafic au LLM simulé, pour laisser le processeur au modèle, et `gateway_real_routing_paused` passe à 1. Le bail est renouvelé toutes les 20 secondes et rendu à la fin, même après un `Ctrl+C`. Si l'outil est tué, il expire seul au bout de 60 secondes.
 
-### Les deux modes d'exploitation (ADR-004)
-
-Selon la puissance de la machine hôte étalonnée par `make check` :
-- **Mode brut (`raw`)** : injecte un extrait direct des séries, logs et spans (~2 600 tokens de preuves, ~3 100 tokens de prompt complet).
-- **Mode résumé (`pre_aggregated`)** : génère une synthèse factuelle pré-calculée en Python (budgets stricts : prompt $\le 850$ tokens, preuves $\le 450$ tokens, sortie $\le 150$ tokens), permettant une exécution rapide même sur CPU.
-
-### Le bail de suspension de routage (§4 bis)
-
-Sur une machine de développement ou en ressource partagée, l'inférence du LLM consomme une part significative des cœurs CPU ou du GPU. Pour éviter que le trafic régulier d'Orion ne rivalise avec l'analyse d'incident, l'outil de RCA ouvre un **bail de suspension** auprès de la gateway (`POST http://gateway:8090/internal/routing-pause`) :
-- Pendant la durée du bail, la gateway détourne 100 % de son trafic vers le simulateur léger et la métrique `gateway_real_routing_paused` passe à 1.
-- Le bail est renouvelé toutes les 20 secondes pendant l'appel Ollama.
-- Dès que l'appel se termine, le bail est explicitement libéré dans un bloc `finally` (`DELETE /internal/routing-pause/{id}`) et `gateway_real_routing_paused` retombe à 0.
-- Si le script venait à être interrompu brutalement (`kill -9`), le bail expire automatiquement après 60 secondes au plus.
+> **Questions** : chaque étape commence par des questions à préparer **avant** de manipuler. Notez vos réponses dans les notes de votre trinôme, puis vérifiez-les pendant l'étape (non relevées ; elles servent au débrief).
 
 ---
 
 ## Étapes à réaliser
 
-### Étape 1 — Incident non annoncé et réflexes de conduite d'incident (15 min)
+### Étape 1 — Valeurs normales, puis incident non annoncé (14 min)
 
-1. Démarrez l'environnement du lab 4b :
+> **Questions avant de manipuler**
+> - **Question 1.** Une requête `/ask` traverse Traefik, `rag`, PostgreSQL et la gateway. Quelles métriques regarderiez-vous pour savoir quelle étape ralentit, sans attendre une alerte ?
+> - **Question 2.** Un temps d'appel mesuré par `rag` vers PostgreSQL s'allonge, mais PostgreSQL dit exécuter chaque transaction en 1 ms. Où peut se trouver le temps manquant ?
+
+1. La pile doit tourner depuis au moins 5 minutes. Vous l'avez lancée en début de séance ; sinon, lancez-la maintenant, puis attendez 5 minutes :
    ```bash
    make start-lab4b
    ```
-   > **Prérequis** : vérifiez sur `http://127.0.0.1:9090/rules` que votre règle `OrionAuditDatabaseSaturationPredite` du lab 4a est toujours chargée dans `config/prometheus/rules.yml`.
-2. Ouvrez la console d'incident sur `http://127.0.0.1:8088`.
-3. Saisissez le code de session :
+   Pendant les premières minutes, les durées ne sont pas encore stables : relevées trop tôt, elles ne servent pas de référence.
+2. **Relevez les valeurs normales**, avant d'ouvrir la session. Dans Grafana Explore (`http://127.0.0.1:3000/explore`, source **Prometheus**), exécutez ces trois requêtes et notez leurs valeurs dans les notes de votre trinôme :
+   - la durée moyenne de chaque étape de `rag` sur la dernière minute :
+     ```promql
+     sum by (stage) (rate(rag_stage_duration_seconds_sum[1m])) / sum by (stage) (rate(rag_stage_duration_seconds_count[1m]))
+     ```
+   - le p95 de la durée de la gateway, par backend et par route :
+     ```promql
+     histogram_quantile(0.95, sum by (le, backend, route) (rate(gateway_request_duration_seconds_bucket[5m])))
+     ```
+   - le temps que PostgreSQL passe sur chaque transaction :
+     ```promql
+     rate(pg_stat_database_active_time_seconds_total{datname="orion"}[5m]) / clamp_min(rate(pg_stat_database_xact_commit{datname="orion"}[5m]), 1e-6)
+     ```
+
+   Ouvrez aussi une trace récente (Explore, source **Tempo**, requête `{ name = "POST /ask" }`) et notez la durée de ses spans les plus longs.
+3. Ouvrez la console d'incident sur `http://127.0.0.1:8088` et saisissez le code de session :
    ```text
    XQXFBSMZHD
    ```
-   et renseignez **avant l'ouverture** les trois rôles obligatoires de votre groupe (si vous travaillez seul, saisissez votre prénom dans les trois champs) :
-   - **Incident Commander** ;
-   - **Mitigator** ;
-   - **Investigator**.
-4. Cliquez sur **« Ouvrir la session »**.
-   > *Rappel* : Dans ce lab d'entraînement, la timeline n'est pas notée et reste distincte du journal chiffré du game day. Profitez-en pour vous familiariser avec l'interface.
-5. Constatez qu'un incident est immédiatement en cours, mais qu'**aucun titre ni indication de cause n'est fourni**.
-6. Explorez les tableaux de bord Grafana (`http://127.0.0.1:3000`) et Grafana Explore (`http://127.0.0.1:3000/explore`) :
-   - Quel signal met en évidence une anomalie franche alors que les alertes SLO de disponibilité restent silencieuses ?
-   - Les requêtes `/ask` aboutissent-elles en HTTP 200 ou échouent-elles en erreur 5xx ?
-   - Quelle étape ou couche de la stack (Traefik, RAG, Gateway, Base de données, Modèle) concentre l'essentiel du temps de traitement ?
-7. Dans la console, notez comment l'application d'un levier de mitigation impose la saisie préalable d'une observation horodatée accompagnée d'une requête de preuve.
+   Renseignez **avant l'ouverture** les trois rôles obligatoires de votre groupe (si vous travaillez seul, saisissez votre prénom dans les trois champs) : **Incident Commander**, **Mitigator** et **Investigator**. Cliquez sur **« Ouvrir la session »**.
+   > *Rappel* : dans ce lab d'entraînement, la timeline n'est pas notée et reste distincte du journal chiffré du game day.
+4. Un incident est en cours, sans titre ni indication de cause. Attendez 2 minutes, puis rejouez les mêmes requêtes et la même recherche de traces. Comparez chaque valeur à celle que vous avez notée :
+   - Les requêtes `/ask` aboutissent-elles toujours en HTTP 200 ? `sum by (code) (rate(traefik_service_requests_total{service="rag@file"}[1m]))`
+   - Quelle étape de `rag` s'écarte de sa valeur normale ?
+   - La gateway et PostgreSQL s'écartent-ils de la leur ?
+   - Une alerte sonne-t-elle ? `http://127.0.0.1:9090/alerts`
+5. Comparez le p95 de l'étape lente, `histogram_quantile(0.95, sum by (le, stage) (rate(rag_stage_duration_seconds_bucket[5m])))`, à sa durée moyenne. Pourquoi les deux valeurs diffèrent-elles autant ?
+6. Notez la requête qui montre le mieux le ralentissement : elle vous servira de preuve à l'étape 4, quand vous rétablirez le service.
 
-### Étape 2 — Première analyse de cause racine avec `make rca` (15 min)
+### Étape 2 — `make rca`, puis vérification de chaque hypothèse (12 min)
+
+> **Questions avant de manipuler**
+> - **Question 3.** Pourquoi l'outil ne laisse-t-il pas le modèle écrire lui-même ses requêtes PromQL, LogQL ou TraceQL ?
+> - **Question 4.** Pendant l'inférence, que devient le trafic que la gateway envoyait à Ollama, et quelle métrique le montre ?
 
 1. Depuis la racine du dépôt `orion-lab`, lancez l'outil de RCA :
    ```bash
    make rca
    ```
-2. Suivez les étapes affichées dans votre terminal :
-   - `[1/5]` Collecte déterministe des alertes, séries métriques clés, logs et traces lentes ;
-   - `[2/5]` Construction du catalogue dynamique de preuves `Q1..Q8` ;
-   - `[3/5]` Formatage du paquet de preuves (mode `raw` ou `pre_aggregated` configuré dans votre `.env`) ;
-   - `[4/5]` Prise du bail de suspension sur la gateway et appel direct au modèle Ollama avec schéma contraint ;
-   - `[5/5]` Réhydratation des requêtes de preuve et écriture de `exports/rca/rca.yaml`.
-3. Pendant ou juste après l'exécution de `make rca`, observez dans Grafana Explore (`http://127.0.0.1:3000/explore`) ou Prometheus (`http://127.0.0.1:9090/query`) l'expression :
+   Comptez de 15 secondes à 2 minutes et demie selon le poste. Notez le mode affiché sur la première ligne (`Mode: raw` ou `Mode: pre_aggregated`) : deux trinômes dans des modes différents n'envoient pas le même prompt au modèle, et n'obtiennent pas les mêmes hypothèses.
+2. Pendant ou juste après l'exécution, observez dans Prometheus (`http://127.0.0.1:9090/query`) :
    ```promql
    max_over_time(gateway_real_routing_paused[1m])
    ```
-   Constatez son passage à `1` pendant la durée de l'inférence (capté sur la fenêtre glissante d'une minute même si le bail est déjà libéré), puis son retour à `0` une fois la fenêtre écoulée.
-4. Ouvrez le fichier généré `exports/rca/rca.yaml` dans votre éditeur :
-   - Observez les hypothèses proposées (`component`, `cause`, `confidence`).
-   - Repérez la requête de preuve associée (`proof_query`), son type de signal (`signal_type`) et son identifiant (`query_id`).
-   - Notez que le champ `verdict` est vide : vous le remplirez à l'étape 4 après la révélation de l'incident.
+   Elle vaut `1` pendant l'inférence, puis retombe à `0` une minute après la fin.
+3. **Vérifiez chaque hypothèse** de `exports/rca/rca.yaml`. Recopiez ce tableau dans vos notes, une ligne par hypothèse :
 
-### Étape 3 — Analyse et ajustement du code dans `rca/` (15 min)
+   | Hypothèse | Composant accusé | Ce que mesure sa preuve | Écart par rapport à la valeur normale ? | La cause décrit-elle cet écart ? |
+   |---|---|---|---|---|
+   | 1 | | | | |
+   | 2 | | | | |
 
-Les fichiers du dossier `rca/` sont montés dans le conteneur et modifiables par votre groupe.
+   Puis, pour chaque hypothèse :
+   1. Dans `exports/rca/rca.yaml`, lisez `component`, `cause` et `query_id`.
+   2. Dans `rca/prompt.py`, fonction `build_catalogue()`, trouvez l'entrée de ce `query_id` : son `summary` dit ce que mesure la requête, et sur quel composant elle porte.
+   3. Copiez `proof_query` dans Grafana Explore, avec la source qui correspond à `signal_type` : `metrics` → **Prometheus**, `logs` → **Loki**, `traces` → **Tempo**. Exécutez-la.
+   4. Comparez le résultat à la valeur normale notée à l'étape 1 : la preuve montre-t-elle un écart, et sur le composant accusé ?
+   5. Relisez la cause : décrit-elle ce que montre la preuve, ou autre chose (un autre composant, une phrase recopiée du prompt) ?
 
-1. Ouvrez `rca/prompt.py` et examinez comment le prompt et les preuves sont construits :
-   - Dans `SYSTEM_PROMPT`, comment la règle d'attribution demande-t-elle au modèle de distinguer le temps d'un appel observé côté client du temps d'exécution interne mesuré côté serveur, et quels sont les 7 identifiants de composants autorisés ?
-   - Dans `build_catalogue()` (alias `build_dynamic_catalogue`), quelles requêtes PromQL, LogQL et TraceQL composent les entrées `Q1` à `Q8`, et comment `rehydrate_report()` associe-t-elle ensuite `proof_query` et `signal_type` au `query_id` choisi par le modèle ?
-   - Quelle différence observez-vous entre `format_evidence_pre_aggregated()` et `format_evidence_raw()` dans la façon de résumer les métriques, les logs et les spans ?
-2. Ouvrez `rca/collect.py` et inspectez la classe `TelemetryCollector` :
-   - Dans `collect_slow_traces()`, quel seuil `min_duration` et quel filtre TraceQL sont passés à `/api/search` pour ne retenir que des traces lentes, et pourquoi les spans sont-ils triés par `duration_ms` décroissant avant d'être tronqués (avec extraction de `server.address` et `server.port`) ?
-   - Dans `collect_recent_logs()`, comment la requête LogQL capte-t-elle aussi bien les journaux `WARN`/`ERROR` que les requêtes lentes sans erreur HTTP ?
-3. Apportez une amélioration ciblée dans `rca/prompt.py` ou `rca/collect.py` :
-   - Par exemple, affinez la formulation de `SYSTEM_PROMPT` ou le libellé `summary` d'une entrée de `build_catalogue()` pour rendre la distinction entre composants encore plus explicite, sans figer de composant en dur.
-4. Relancez `make rca` :
-   ```bash
-   make rca
+   Le champ `verdict` reste vide : vous le remplirez à l'étape 4, après la révélation. Gardez le tableau : il vous dit quoi ajuster à l'étape 3.
+
+### Étape 3 — Ajuster ce que lit le modèle dans `rca/prompt.py` (14 min)
+
+> **Questions avant de manipuler**
+> - **Question 5.** Le modèle ne reçoit que les données collectées et la description de chaque requête du catalogue. Quels mots d'une description peuvent l'orienter vers la bonne requête ?
+> - **Question 6.** Pourquoi un changement du prompt ne garantit-il pas le même résultat à chaque exécution ?
+
+`make rca` relit le dossier `rca/` à chaque lancement : une modification compte dès l'exécution suivante, sans redémarrer la pile.
+
+1. Ouvrez `rca/prompt.py`. Trois éléments orientent la réponse du modèle :
+
+   | Élément | Où, dans `rca/prompt.py` | Ce qu'il oriente |
+   |---|---|---|
+   | Description des 7 composants | `SYSTEM_PROMPT`, les lignes qui suivent « Topologie et composants autorises » | le composant accusé |
+   | Règle d'attribution | `SYSTEM_PROMPT`, le paragraphe « Regle d'attribution » | le composant accusé quand un client attend un serveur qui reste rapide |
+   | Description de chaque requête | `build_catalogue()`, le champ `summary` de `Q1` à `Q8` | la requête de preuve choisie |
+
+   Ne modifiez ni `rca/models.py` ni les champs `query` du catalogue : le checkpoint 4 rejoue ces requêtes.
+2. Choisissez quoi modifier d'après votre tableau de l'étape 2 :
+   - **le composant accusé est innocent** : sa description, ou la règle d'attribution ;
+   - **la preuve ne montre pas l'écart** : le `summary` de la requête choisie, et celui de la requête qui montre l'écart ;
+   - **la cause décrit autre chose** : le modèle recopie souvent des mots du prompt ou des `summary` dans sa cause. Repérez lesquels, et reformulez-les.
+3. Modifiez **un seul élément à la fois**. Voici la forme d'une modification, sur un élément sans rapport avec l'incident, la description d'`embed` :
+
+   Avant :
+   ```text
+   - embed : vectorisation (/v1/embeddings, nominal < 0.15s)
    ```
-   Comparez la pertinence et la précision des hypothèses obtenues avant et après votre ajustement.
+   Après :
+   ```text
+   - embed : vectorisation des questions (/v1/embeddings, nominal < 0.15s), mesuree par le stage embed de rag
+   ```
+   Écrivez des règles générales. Ne nommez pas la cause de cet incident dans le prompt (« la cause est … ») : elle ne vaudrait pour aucun autre incident.
+4. Relancez `make rca` **deux fois**, et remplissez de nouveau le tableau de l'étape 2 à chaque exécution. Le même prompt ne donne pas toujours la même réponse : comparez les deux.
+5. `git diff rca/prompt.py` montre vos modifications. Pour repartir de l'original : `git checkout upstream/main -- rca/prompt.py`. Si `make rca` échoue juste après une modification, c'est souvent un guillemet ou une virgule : relisez les lignes modifiées.
 
-### Étape 4 — Révélation de l'incident, qualification des hypothèses et clôture (15 min)
+### Étape 4 — Rétablir le service, révéler l'incident et juger les hypothèses (20 min)
 
-1. Dans la console d'incident (`http://127.0.0.1:8088`), cliquez sur le bouton **« Révéler l'incident (Lab) »**.
-2. Prenez connaissance de la cause réelle de l'incident actif sous le code `XQXFBSMZHD`.
-3. Ouvrez `exports/rca/rca.yaml` :
-   - Pour chaque hypothèse générée par le modèle, rejouez sa requête `proof_query` dans Grafana Explore (`http://127.0.0.1:3000/explore`, source **Prometheus**, **Loki** ou **Tempo** selon `signal_type`) afin de confronter la déduction du modèle aux signaux réels.
+> **Questions avant de manipuler**
+> - **Question 7.** Une hypothèse désigne le bon composant et la bonne requête de preuve, mais sa cause décrit une autre panne. Est-elle `juste` ?
+> - **Question 8.** Quelle différence faites-vous entre une hypothèse `fausse` et une hypothèse `hallucinee` ?
+
+Comme au game day, vous rétablissez d'abord le service, puis vous révélez la cause réelle pour juger les hypothèses du modèle.
+
+1. **Déclarez et observez.** Dans la console (`http://127.0.0.1:8088`), partie 3 :
+   - déclarez l'incident (symptôme observé, sévérité) ;
+   - ajoutez une observation qui décrit ce que vous avez trouvé, avec sa requête de preuve (PromQL ou TraceQL, par exemple celle que vous avez notée à l'étape 1).
+2. **Choisissez un levier.** La console exige au moins une observation avant tout levier. Partie 4 : choisissez la catégorie de levier et la cible, puis cliquez sur **Exécuter le levier**.
+
+   > **Indice** : aucun levier n'agit directement sur un lien réseau. Cherchez parmi ceux qui agissent sur `rag`, le service qui ouvre ses connexions vers PostgreSQL. Un levier non adapté provoque environ 45 secondes de latence sans rétablir le service : enregistrez alors une nouvelle observation, et essayez-en un autre.
+3. **Vérifiez le rétablissement.** Attendez une minute, puis relancez dans Prometheus ou Grafana Explore la durée moyenne de l'étape `retrieval`, sur une fenêtre courte :
+   ```promql
+   sum(rate(rag_stage_duration_seconds_sum{stage="retrieval"}[1m])) / sum(rate(rag_stage_duration_seconds_count{stage="retrieval"}[1m]))
+   ```
+   Une à deux minutes après le bon levier, elle retombe à sa valeur d'avant l'incident, sous 0,3 s. Confirmez-le sur une trace récente dans Tempo (`http://127.0.0.1:3000/explore`, source **Tempo**, requête `{ name = "POST /ask" }`) : le span `rag.retrieval` retrouve lui aussi une durée inférieure à 0,3 s. Si rien ne change, le levier ne corrigeait pas la cause : relisez votre diagnostic et essayez-en un autre.
+4. **Révélez l'incident.** Cliquez sur le bouton **« Révéler l'incident (Lab) »** et prenez connaissance de la cause réelle de l'incident `XQXFBSMZHD`.
+5. **Jugez les hypothèses.** Ouvrez `exports/rca/rca.yaml` : il contient le rapport de votre dernière exécution de `make rca`, c'est lui que vous jugez.
+   - Reprenez le tableau de l'étape 2 rempli pour cette exécution, et confrontez chaque colonne à la cause révélée.
+   - Lisez séparément le composant (`component`), la cause (`cause`) et la preuve (`query_id`).
    - Renseignez le champ `verdict` de **chaque hypothèse** avec strictement l'un des trois termes suivants :
-     - `"juste"` : le composant et le mécanisme identifiés correspondent à l'incident et sont étayés par la requête de preuve ;
-     - `"fausse"` : l'hypothèse incrimine un composant innocent ou propose un diagnostic contredit par les signaux ;
+     - `"juste"` : le composant, la cause **et** la requête de preuve correspondent tous les trois à l'incident ;
+     - `"fausse"` : il en manque au moins un : composant innocent, cause qui décrit une autre panne (même si le composant et la preuve sont bons), ou preuve contredite par les signaux ;
      - `"hallucinee"` : la cause invoque des éléments imaginaires, non observables ou sans lien logique avec les données collectées.
-4. Enregistrez `exports/rca/rca.yaml`.
-5. Dans la console (`http://127.0.0.1:8088`), saisissez un court bilan de clôture puis cliquez impérativement sur **« Clôturer l'incident et générer l'archive »** pour refermer la session en cours avant la validation du checkpoint.
 
-### Étape 5 — Validation du Checkpoint 4 (15 min)
+     Écrivez `hallucinee` sans accent : le contrôle refuse `hallucinée`.
+6. Enregistrez `exports/rca/rca.yaml`.
+7. Dans la console (`http://127.0.0.1:8088`), saisissez un court bilan de clôture puis cliquez impérativement sur **« Clôturer l'incident et générer l'archive »** pour refermer la session en cours avant la validation du checkpoint.
 
-> **Important** : assurez-vous d'avoir clôturé toute session active dans la console (`http://127.0.0.1:8088`) via **« Clôturer l'incident et générer l'archive »** avant d'exécuter `make check-lab4b` (le contrôle réinjecte brièvement la session `PF5HHRZQJ9` du lab 4a et refuse de s'exécuter si une session est encore ouverte).
+### Étape 5 — Validation du Checkpoint 4 (10 min)
 
-Le paramètre `PIN` n'est pas choisi par votre groupe : c'est le code de présence à 4 caractères que l'enseignant écrit au tableau en fin de séance (le système de vérification refuse tout autre code).
+> **Questions avant de manipuler**
+> - **Question 9.** Pourquoi faut-il clôturer la session `XQXFBSMZHD` avant de lancer le contrôle ?
+> - **Question 10.** Que vérifie réellement le contrôle n° 5, et que ne vérifie-t-il pas ?
+
+> **Important** : assurez-vous d'avoir clôturé toute session active dans la console (`http://127.0.0.1:8088`) via **« Clôturer l'incident et générer l'archive »** avant d'exécuter `make check-lab4b`. Le contrôle ouvre brièvement une session de contrôle, qui fait grossir la base d'audit `orion_audit`, et refuse de s'exécuter si une session est encore ouverte.
+
+**1. Ajoutez la règle prédictive fournie.** Le checkpoint 4 contrôle une alerte qui prévoit la saturation de la base d'audit `orion_audit`, dont la capacité déclarée est de 50 Mo : `predict_linear` prolonge la tendance des 10 dernières minutes sur 4 heures. Copiez ce bloc à la fin de `config/prometheus/rules.yml`. Il commence par six espaces : gardez-les, `- alert:` doit s'aligner sur les autres règles du fichier.
+
+```yaml
+      - alert: OrionAuditDatabaseSaturationPredite
+        expr: |
+          predict_linear(pg_database_size_bytes{datname="orion_audit"}[10m], 4 * 3600) > 50 * 10^6
+          and
+          pg_database_size_bytes{datname="orion_audit"} < 50 * 10^6
+        for: 2m
+        labels:
+          severity: ticket
+          service: postgres-db
+        annotations:
+          summary: "Saturation prévisible de la base d'audit orion_audit sous 4 heures"
+          description: "L'extrapolation linéaire de pg_database_size_bytes sur 10 min prévoit le dépassement de la capacité déclarée de 50 Mo dans 4 heures."
+```
+
+Si vous avez fait le lab 4a facultatif et que votre propre règle `OrionAuditDatabaseSaturationPredite` est déjà dans le fichier, gardez la vôtre et ne collez pas ce bloc.
+
+**2. Rechargez Prometheus**, puis vérifiez que `OrionAuditDatabaseSaturationPredite` apparaît sur `http://127.0.0.1:9090/rules`. La commande n'affiche rien si le rechargement réussit :
+
+```bash
+curl -fsS -X POST http://127.0.0.1:9090/-/reload
+```
+
+**3. Lancez le contrôle.**
+
+Le paramètre `PIN` n'est pas choisi par votre groupe : c'est le code de présence à 4 caractères que l'enseignant écrit au tableau en fin de séance. La commande produit un jeton quel que soit le code saisi, mais un jeton fabriqué avec un autre code est refusé à la correction : recopiez-le exactement.
 
 Exécutez la vérification automatique du Checkpoint 4 avec ce code PIN et votre numéro étudiant (celui de la personne qui lance la commande, un seul numéro ; chacun lance au moins un checkpoint sur les quatre — remplacez `ABCD` par le code écrit au tableau) :
 
@@ -158,11 +236,11 @@ Exécutez la vérification automatique du Checkpoint 4 avec ce code PIN et votre
 make check-lab4b PIN=ABCD ETU=20260001
 ```
 
-Ce qui n'est pas terminé en séance se termine chez vous : le checkpoint se valide jusqu'au début de la journée de cours suivante.
+Ce qui n'est pas terminé en séance se termine chez vous : le checkpoint se valide jusqu'à la date limite annoncée sur Teams pour votre promotion.
 
 La commande exécute les 5 contrôles suivants :
-1. **Présence de la règle prédictive du lab 4a** : vérifie que `OrionAuditDatabaseSaturationPredite` est chargée dans Prometheus (`config/prometheus/rules.yml`).
-2. **Déclenchement de la règle prédictive** : réinjecte automatiquement la session `PF5HHRZQJ9` et vérifie que votre règle réagit bien à la croissance de `orion_audit`, puis referme la session.
+1. **Présence de la règle prédictive** : vérifie qu'une règle `predict_linear` sur `orion_audit` est chargée dans Prometheus (`config/prometheus/rules.yml`).
+2. **Déclenchement de la règle prédictive** : ouvre la session de contrôle `PF5HHRZQJ9`, vérifie que la règle passe en `pending` ou `firing` pendant la croissance de `orion_audit`, puis referme la session.
 3. **Conformité du rapport RCA** : vérifie la présence, la validité YAML et le respect du schéma de `exports/rca/rca.yaml` (1 ou 2 hypothèses valides).
 4. **Renseignement des verdicts** : s'assure que chaque hypothèse dispose d'un verdict renseigné (`juste`, `fausse` ou `hallucinee`).
 5. **Rejouabilité des preuves** : réexécute les requêtes de preuve (`proof_query`) référencées dans le rapport auprès de Prometheus, Loki ou Tempo pour vérifier leur validité syntaxique.
@@ -181,8 +259,8 @@ git push
 
 Avant de clore le lab, vérifiez les points suivants :
 
-1. La session `XQXFBSMZHD` a bien été refermée via **« Clôturer l'incident et générer l'archive »** sur `http://127.0.0.1:8088`.
-2. Votre règle `OrionAuditDatabaseSaturationPredite` du lab 4a figure toujours dans `config/prometheus/rules.yml` et apparaît sur `http://127.0.0.1:9090/rules`.
+1. Le service a été rétabli par un levier, après une observation, puis la session `XQXFBSMZHD` a bien été refermée via **« Clôturer l'incident et générer l'archive »** sur `http://127.0.0.1:8088`.
+2. La règle `OrionAuditDatabaseSaturationPredite` de l'étape 5 figure dans `config/prometheus/rules.yml` et apparaît sur `http://127.0.0.1:9090/rules`.
 3. Le fichier `exports/rca/rca.yaml` contient 1 ou 2 hypothèses dont chaque champ `verdict` est renseigné (`"juste"`, `"fausse"` ou `"hallucinee"`) et chaque `proof_query` s'exécute sans erreur dans Grafana Explore (`http://127.0.0.1:3000/explore`).
 4. La commande `make check-lab4b PIN=ABCD ETU=20260001` valide les **5 contrôles `[OK]`** et votre jeton `ORION-CK4-...` est commité dans `jetons/ckn.txt`.
 
