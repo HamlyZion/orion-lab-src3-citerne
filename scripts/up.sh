@@ -8,7 +8,7 @@ cd "$REPO_ROOT"
 
 sh "$SCRIPT_DIR/gen-certs.sh"
 
-mkdir -p "$REPO_ROOT/span-metier" "$REPO_ROOT/rca" "$REPO_ROOT/exports/rca" "$REPO_ROOT/.orion-state"
+mkdir -p "$REPO_ROOT/span-metier" "$REPO_ROOT/rca" "$REPO_ROOT/exports/rca" "$REPO_ROOT/.orion-state" 2>/dev/null || true
 # Sous Linux et WSL2, tools tourne sous l'UID 10001 : il doit pouvoir écrire dans ces dossiers montés depuis l'hôte.
 chmod 0777 "$REPO_ROOT/span-metier" "$REPO_ROOT/rca" "$REPO_ROOT/exports/rca" "$REPO_ROOT/.orion-state" 2>/dev/null || true
 chmod 0666 "$REPO_ROOT/.orion-state/"* 2>/dev/null || true
@@ -40,11 +40,8 @@ docker run --rm -v orion_orion-flags:/data \
   pgvector/pgvector:0.8.7-pg17-bookworm \
   sh -c '[ -s /data/flags.json ] || printf "{\"flags\":{}}\n" > /data/flags.json; chmod 0777 /data && chmod 0666 /data/flags.json' >/dev/null 2>&1 || true
 
-# Droits de .orion-state vus depuis les conteneurs : le chmod de l'hôte échoue si le dossier appartient à root
-# (dépôt cloné avec sudo) et ne s'applique pas si Docker ne partage pas le dossier (Colima, dépôt hors du dossier personnel).
-docker run --rm -v "$REPO_ROOT/.orion-state:/data" \
-  pgvector/pgvector:0.8.7-pg17-bookworm \
-  sh -c 'chmod 0777 /data && chmod -R a+rwX /data' >/dev/null 2>&1 || true
+# Droits des dossiers où écrivent les conteneurs, vus depuis les conteneurs (voir scripts/droits.sh).
+sh "$SCRIPT_DIR/droits.sh" .orion-state exports/rca
 
 # Nettoyage d'un éventuel verrou postmaster.pid résiduel si postgres-db est arrêté
 if docker volume inspect orion_orion-pgdata >/dev/null 2>&1 && ! docker ps --format '{{.Names}}' | grep -q "postgres-db"; then
