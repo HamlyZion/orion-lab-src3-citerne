@@ -1,0 +1,31 @@
+# Exemple commenté de manifeste Kubernetes PrometheusRule (Prometheus Operator)
+# Ce manifeste injecte dynamiquement des règles d'enregistrement et d'alerte dans Prometheus
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: orion-slo-rules
+  namespace: orion
+  labels:
+    release: prometheus-stack # Label sélectionné par l'instance Prometheus Operator
+    role: alert-rules
+spec:
+  groups:
+    - name: orion_k8s_availability_slo
+      interval: 10s
+      rules:
+        # Règle d'alerte déclarée sous forme de ressource personnalisée (CRD) Kubernetes
+        - alert: OrionK8sServiceAvailabilityBurnRateRapid
+          expr: >-
+            job:traefik_requests_errors:ratio_rate8m > (14.4 * 0.005)
+            and
+            job:traefik_requests_errors:ratio_rate40s > (14.4 * 0.005)
+            and
+            sum(increase(traefik_service_requests_total{service="rag@file"}[40s])) >= 10
+          keep_firing_for: 2m
+          labels:
+            severity: page
+            team: sre-orion
+          annotations:
+            summary: "Consommation critique du budget d'erreurs (burn rate > 14.4)"
+            description: "Le ratio d'erreurs dépasse 7.2 % sur 8m et 40s sur le service {{ $labels.service }}."
+            runbook_url: "https://wiki.nordel.internal/sre/runbooks/orion-5xx"

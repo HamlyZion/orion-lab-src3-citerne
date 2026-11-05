@@ -1,0 +1,21 @@
+# Règles d'alerte (Alerting Rules) — Alerte de burn rate multi-fenêtres
+groups:
+  - name: orion_burn_rate_alerts
+    interval: 10s
+    rules:
+      # Alerte de burn rate rapide (page) : facteur 14.4 sur fenêtre longue 8m et courte 40s
+      # Consomme 2 % du budget mensuel en 1 heure en production (ici fenêtres compressées)
+      - alert: OrionAvailabilityBurnRateRapid
+        expr: >-
+          job:traefik_requests_errors:ratio_rate8m > (14.4 * 0.005)
+          and
+          job:traefik_requests_errors:ratio_rate40s > (14.4 * 0.005)
+          and
+          sum(increase(traefik_service_requests_total{service="rag@file"}[40s])) >= 10
+        keep_firing_for: 2m
+        labels:
+          severity: page
+          service: rag
+        annotations:
+          summary: "Consommation critique du budget d'erreurs d'Orion (burn rate > 14.4)"
+          description: "Plus de 7.2 % des requêtes échouent sur les fenêtres de 8m et 40s simultanément."

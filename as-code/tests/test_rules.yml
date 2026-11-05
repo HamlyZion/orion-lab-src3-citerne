@@ -1,0 +1,46 @@
+# Exemple commenté de tests unitaires PromQL pour promtool
+# Exécution : promtool test rules tests/test_rules.yml
+
+rule_files:
+  - ../rules/recording-rules.yml
+  - ../rules/alerting-rules.yml
+
+evaluation_interval: 10s
+
+tests:
+  # Test 1 : Comportement nominal — aucun déclenchement d'alerte lorsque le taux d'erreurs est nul
+  - interval: 10s
+    input_series:
+      - series: 'traefik_service_requests_total{service="rag@file", code="200"}'
+        values: '0+5x30' # 5 requêtes par seconde, 200 OK
+      - series: 'traefik_service_requests_total{service="rag@file", code="500"}'
+        values: '0+0x30' # 0 erreur
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: OrionAvailabilityBurnRateRapid
+        exp_alerts: [] # Aucune alerte attendue en régime nominal
+
+  # Test 2 : Déclenchement de l'alerte rapide en cas de dégradation massive (20 % d'erreurs 500)
+  - interval: 10s
+    input_series:
+      - series: 'traefik_service_requests_total{service="rag@file", code="200"}'
+        # 4 req/s en 200 (80 % du trafic)
+        values: '0 40 80 120 160 200 240 280 320 360 400 440 480 520 560 600 640 680 720 760 800'
+      - series: 'traefik_service_requests_total{service="rag@file", code="500"}'
+        # 1 req/s en 500 (20 % d'erreurs, burn rate = 40 >> 14.4)
+        values: '0 10 20 30 40 50 60 70 80 90 100 110 120 130 140 150 160 170 180 190 200'
+    promql_expr_test:
+      - eval_time: 1m
+        expr: job:traefik_requests_errors:ratio_rate40s
+        exp_samples:
+          - value: 0.20
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: OrionAvailabilityBurnRateRapid
+        exp_alerts:
+          - exp_labels:
+              severity: page
+              service: rag
+            exp_annotations:
+              summary: "Consommation critique du budget d'erreurs d'Orion (burn rate > 14.4)"
+              description: "Plus de 7.2 % des requêtes échouent sur les fenêtres de 8m et 40s simultanément."

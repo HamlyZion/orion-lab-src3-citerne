@@ -1,0 +1,35 @@
+# Rapport d'analyse de cause racine (RCA) Orion - Lab 4b
+#
+# INSTRUCTIONS POUR L'ÉTUDIANT :
+# 1. Examinez les hypothèses proposées ci-dessous et rejouez les requêtes de preuve
+#    (proof_query) dans Grafana Explore (Prometheus, Loki ou Tempo).
+# 2. Après révélation de l'incident, renseignez le champ 'verdict' pour chaque hypothèse :
+#    - 'juste'       : composant et cause corrects étayés par la télémétrie
+#    - 'fausse'      : hypothèse erronée ou non pertinente
+#    - 'hallucinee'  : cause inventée, non étayée par les métriques ou signal absent
+# 3. Ce fichier sera vérifié par 'make check-lab4b PIN=ABCD ETU=20260001' (ETU = votre numéro étudiant).
+
+generated_at: '2026-11-05T11:46:34.072899+00:00'
+mode: pre_aggregated
+model: qwen3:1.7b
+actual_duration_s: 20.902
+token_usage:
+  prompt_eval_count: 1166
+  eval_count: 78
+hypotheses:
+- rank: 1
+  component: postgres-link
+  cause: duree requetes gateway par backend et route s'allonge
+  query_id: Q6
+  signal_type: metrics
+  proof_query: histogram_quantile(0.95, sum by (le, backend, route) (rate(gateway_request_duration_seconds_bucket[5m])))
+  confidence: high
+  verdict: ''
+- rank: 2
+  component: postgres-link
+  cause: attente pool de connexions SQL rag s'allonge
+  query_id: Q4
+  signal_type: metrics
+  proof_query: histogram_quantile(0.95, sum by (le) (rate(rag_db_pool_wait_seconds_bucket[5m])))
+  confidence: medium
+  verdict: ''

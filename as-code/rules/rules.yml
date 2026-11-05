@@ -1,0 +1,152 @@
+groups:
+  - name: orion_slo_recording
+    interval: 10s
+    rules:
+      - record: job:traefik_requests:rate5m
+        expr: sum(rate(traefik_service_requests_total{service="rag@file", code!="429"}[5m]))
+
+      - record: job:traefik_errors:ratio_rate8m
+        expr: |
+          (
+            sum(rate(traefik_service_requests_total{service="rag@file", code=~"5.."}[8m]))
+            or vector(0)
+          )
+          /
+          sum(rate(traefik_service_requests_total{service="rag@file", code!="429"}[8m])) 
+
+      - record: job:traefik_errors:ratio_rate40s
+        expr: |
+          (
+            sum(rate(traefik_service_requests_total{service="rag@file", code=~"5.."}[40s]))
+            or vector(0)
+          )
+          /
+          sum(rate(traefik_service_requests_total{service="rag@file", code!="429"}[40s]))
+
+      - record: job:orion_gateway_latency_p95:5m
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(gateway_request_duration_seconds_bucket[5m]))
+          )
+
+      - record: backend:orion_gateway_latency_p95:5m
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le, backend) (rate(gateway_request_duration_seconds_bucket[5m]))
+          )
+
+      - record: job:orion_quality_good_ratio:rate15m
+        expr: |
+          sum(rate(quality_reference_checks_total{result="good"}[15m]))
+          /
+          clamp_min(sum(rate(quality_reference_checks_total[15m])), 1e-9)
+
+  - name: orion_slo_alerts
+    interval: 10s
+    rules:
+      - alert: OrionSLODisponibiliteBurnRatePage
+        expr: |
+          job:traefik_errors:ratio_rate8m > (14.4 * 0.005)
+          and
+          job:traefik_errors:ratio_rate40s > (14.4 * 0.005)
+          and
+          sum(increase(traefik_service_requests_total{service="rag@file", code!="429"}[40s])) >= 10
+        keep_firing_for: 2m 
+        labels:
+          severity: page
+          slo: availability
+          service: orion-rag
+        annotations:
+          summary: "Consommation rapide du budget d'erreur de disponibilité d'Orion (burn rate > 14,4x)"
+          description: "Le taux d'erreur 5xx hors 429 dépasse le seuil de burn rate rapide sur 8 min et 40 s."
+
+      - alert: OrionSLOLatencePage
+        expr: |
+          (
+            histogram_quantile(0.95, sum by (le, backend) (rate(gateway_request_duration_seconds_bucket{backend="ollama"}[5m]))) > 12
+            and
+            sum by (backend) (increase(gateway_request_duration_seconds_count{backend="ollama"}[5m])) >= 5
+          )
+          or
+          (
+            histogram_quantile(0.95, sum by (le, backend) (rate(gateway_request_duration_seconds_bucket{backend="simule"}[5m]))) > 2.5
+            and
+            sum by (backend) (increase(gateway_request_duration_seconds_count{backend="simule"}[5m])) >= 20
+          )
+        for: 2m
+        labels:
+          severity: page
+          slo: latency
+          service: orion-gateway
+        annotations:
+          summary: "Dépassement du SLO de latence p95 sur le backend {{ $labels.backend }}"
+          description: "La latence p95 sur 5 min dépasse le seuil du SLO (12 s pour ollama, 2,5 s pour simule)."
+
+      - alert: OrionSLOQualiteTicket
+        expr: |
+          (
+            sum(rate(quality_reference_checks_total{result="bad"}[15m]))
+            /
+            sum(rate(quality_reference_checks_total[15m]))
+          ) > 0.10
+          and
+          sum(increase(quality_reference_checks_total[15m])) >= 5
+        for: 2m
+        labels:
+          severity: ticket
+          slo: quality
+          service: orion-rag
+        annotations:
+          summary: "Dégradation du SLO de qualité sur les questions de référence (< 90 %)"
+          description: "Plus de 10 % des contrôles synthétiques de référence ont échoué sur les 15 dernières minutes."
+
+      - alert: OrionQuotaEquipeRejetsTicket
+        expr: sum by (team) (increase(gateway_quota_rejections_total[5m])) >= 10
+        for: 1m
+        labels:
+          severity: ticket
+          service: orion-gateway
+        annotations:
+          summary: "Rejets de quota (HTTP 429) pour l'équipe {{ $labels.team }}"
+          description: "Au moins 10 requêtes de l'équipe {{ $labels.team }} ont été rejetées pour dépassement de quota sur 5 min."
+
+      - alert: OrionAbsenceDeTraficPage
+        expr: |
+          absent(traefik_service_requests_total{service="rag@file"})
+          or
+          sum(rate(traefik_service_requests_total{service="rag@file"}[5m])) == 0
+          or
+          probe_success{job="blackbox"} == 0
+        for: 2m
+        labels:
+          severity: page
+          service: orion-rag
+        annotations:
+          summary: "Absence de trafic ou échec de la sonde HTTPS sur Traefik"
+          description: "Aucune requête n'est observée sur le service rag@file depuis 5 min ou la sonde blackbox HTTPS échoue."
+
+      - alert: OrionAuditDatabaseSaturationPredite
+        expr: |
+          predict_linear(pg_database_size_bytes{datname="orion_audit"}[10m], 4 * 3600) > 50 * 10^6
+          and
+          pg_database_size_bytes{datname="orion_audit"} < 50 * 10^6
+        for: 2m
+        labels:
+          severity: ticket
+          service: postgres-db
+        annotations:
+          summary: "Saturation prévisible de la base d'audit orion_audit sous 4 heures"
+          description: "L'extrapolation linéaire de pg_database_size_bytes sur 10 min prévoit le dépassement de la capacité déclarée de 50 Mo dans 4 heures."
+
+      - alert: OrionWorkerFraicheurIndexationTicket
+        expr: (time() - worker_last_success_timestamp_seconds) > 140
+        for: 30s
+        labels:
+          severity: ticket
+          service: orion-worker
+        annotations:
+          summary: "L'indexation documentaire du worker Orion ne progresse plus"
+          description: "Le dernier cycle d'indexation réussi remonte à {{ $value | humanizeDuration }} (seuil : 140 s)."
+>>>>>>> 5d3080abb3f411f42b29705d5622bc66c12ed415
