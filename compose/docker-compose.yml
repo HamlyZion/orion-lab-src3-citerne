@@ -20,7 +20,6 @@ services:
     restart: unless-stopped
     mem_limit: 256m
     command: ["opentelemetry-instrument", "uvicorn", "src.rag.app:app", "--host", "0.0.0.0", "--port", "8000"]
-    # TODO(lab-3): surcharger command avec opentelemetry-instrument pour auto-instrumenter FastAPI, httpx et psycopg
     environment:
       OTEL_SERVICE_NAME: orion-rag
       OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
