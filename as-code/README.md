@@ -48,12 +48,12 @@ docker run --rm -v "$(pwd)/rules:/rules" -v "$(pwd)/tests:/tests" prom/prometheu
 
 ### Arbitrage 1 : Objectif de SLO recommandé pour Nordel
 - **Objectif cible recommandé** : `[Ex. 99,5 % sur 30 jours mobiles]`
-- **Justification économique et opérationnelle** : `[Expliquez pourquoi cet objectif protège l'expérience des équipes Support/RH/Dev sans imposer une astreinte 24/7 déraisonnable sur une plateforme interne]`
+- **Justification économique et opérationnelle** : `[La platform est destinée a des services non critique ce qui implique qu'une dispo de 99,5% peut suffire]`
 - **Choix des fenêtres d'alerte** : `[Comparez les fenêtres de salle de cours (8 min / 40 s) aux fenêtres recommandées en production (1 h / 5 min et 6 h / 30 min) selon le Google SRE Workbook]`
 
 ### Arbitrage 2 : Cardinalité des labels et flux Loki (Budget 1 000 flux)
-- **Labels indexés retenus** : `[Listez vos labels indexés, ex. <label 1>, <label 2>]`
-- **Champs relégués en structured metadata ou contenu** : `[Listez les champs non indexés, ex. <champ 1>, <champ 2>]`
+- **Labels indexés retenus** : `[<service>, <team>, <level>]`
+- **Champs relégués en structured metadata ou contenu** : `[<trace_id>, <span_id>, <version>]`
 - **Démonstration du respect du budget** : `[Montrez comment le produit cartésien de vos labels reste très inférieur au plafond de 1 000 flux configuré sur Loki]`
 
 ### Arbitrage 3 : Politique de masquage et confidentialité (RGPD / RH)

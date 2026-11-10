@@ -33,7 +33,8 @@ tests:
       - eval_time: 1m
         expr: job:traefik_requests_errors:ratio_rate40s
         exp_samples:
-          - value: 0.20
+          - labels: "job:traefik_requests_errors:ratio_rate40s"
+            value: 0.20
     alert_rule_test:
       - eval_time: 2m
         alertname: OrionAvailabilityBurnRateRapid

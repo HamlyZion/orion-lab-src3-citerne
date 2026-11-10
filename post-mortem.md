@@ -80,7 +80,7 @@ _Décrivez les actions prises pour restaurer le service aux utilisateurs et leur
 _Formulez la cause racine exacte. Toute affirmation doit être étayée par une requête et un extrait probant issu de l'archive d'export._
 
 - **Composant défaillant** : `[Service RAG et son pool de connexion à la DB trop solicité par l'afflux de rq depuis la gateway]`
-- **Mécanisme de la panne** : `[Trop de requêtes en erreur 429 sont arrivées sur la gateway ce qui a provoqué une surcharge et a saturé la file d'attente de la DB. Cela a donc provoqué une hausse de latence de la DB]`
+- **Mécanisme de la panne** : `[Trop de requêtes généré par l'équipe support sont arrivées sur la gateway ce qui a provoqué une surcharge et a saturé la file d'attente de la DB. Cela a provoqué l'émission d'erreur HTTP 429. Les slots du pool de connexions SQL du service RAG on été accaparé. Cela a donc provoqué une hausse de latence de la DB]`
 - **Requête de preuve irréfutable** :
     
     ```
@@ -95,6 +95,17 @@ _Formulez la cause racine exacte. Toute affirmation doit être étayée par une 
     Voir le graph de débit de requetes Gateway par équipe / backend.
     Voir le graph cache embedding
     Voir le graph Erreur 5.. et rejets
+
+# Extrait métrique Prometheus sous incident (11:56 UTC) :
+# Attente pool SQL (nominal < 0.05s) :
+histogram_quantile(0.95, sum by (le) (rate(rag_db_pool_wait_seconds_bucket[5m]))) -> 2.842s
+
+# Débit de requêtes de l'équipe Support (nominal ~0.3 req/s) :
+gateway_requests_total{backend="rag", team="support"} -> 1.25 req/s
+gateway_quota_rejections_total{team="support"}        -> 0.72 req/s (rejets HTTP 429)
+
+# Après application du levier de délestage (12:11 UTC) :
+histogram_quantile(0.95, sum by (le) (rate(rag_db_pool_wait_seconds_bucket[5m]))) -> 0.041s (retour à la normale)	
     ```
     
 
@@ -106,10 +117,10 @@ _Formulez la cause racine exacte. Toute affirmation doit être étayée par une 
 
 _Calculez l'impact réel de l'incident sur le budget d'erreurs mensuel de la plateforme._
 
-- **SLO de référence** : `[> 90% de disponibilité sur 30 jours]`
+- **SLO de référence** : `[99,5 % de requêtes sans erreur HTTP 5xx (hors 429), 90% de disponibilité sur 30 jours]`
 - **Budget d'erreurs total sur 30 jours** : `10 % du volume total mensuel (~4320 minutes d'indisponibilité à 100 %)]`
-- **Budget d'erreurs consommé par l'incident** : `[Aucune idée]`
-- **Conséquence pour le cycle de déploiement** : `[Décision SRE : Augmentation de la latence des réponses du RAG sur la durée de l'incident, aucun impact majeur]`
+- **Budget d'erreurs consommé par l'incident** : `[Environ entre 3,2 et 3,4 % du budget mensuel consommé]`
+- **Conséquence pour le cycle de déploiement** : `[Décision SRE : L'incident n'a pas consommé plus de 5 % du budget mensuel. Augmentation de la latence des réponses du RAG sur la durée de l'incident, aucun impact majeur]`
 
 > **Rédacteur / Signature de la section**:`[Théo Rufin- IC]`
 
@@ -133,10 +144,10 @@ _Actions concrètes pour éviter la récurrence de la panne ou accélérer sa r�
 
 _Expliquez en 5 lignes comment cet incident serait détecté et traité dans un environnement Kubernetes managé par des Operators._
 
-```
-Pas vu en cours, le cours de kub est prévu pour le trimestre suivant. Nous n'avons pas les compétences pour répondre à cette question.
-```
+- **Détection** : La découverte du service se voit via un ServiceMonitor qui cible le service orion-rag pour scraper ses métriques.
 
-- **Manifeste associé** : adapter l'un des modèles fournis dans `as-code/k8s/` (`service-monitor.yaml` ou `prometheus-rule.yaml`) à la cible ou à la règle spécifique de votre incident, et le référencer ici.
+- **Traitement** : L'Ingress Controleur peut appliquer une limitation du débit avant que celle ci arrivent au pog rag.
+
+- **Manifestes associés** : Les gabarits fournis dans as-code/k8s/service-monitor.yaml et as-code/k8s/prometheus-rule.yaml illustrent cette configuration déclarative.
 
 > **Rédacteur / Signature de la section**:`[Tout le monde]`
